@@ -1,14 +1,18 @@
 ---
 name: wiki-pk-base
-description: "An automated skill to build and maintain a persistent, interlinked Markdown knowledge base for any domain or topic. It ingests raw sources, compiles them into a structured wiki, supports querying, and lints for consistency."
+description: "Build and maintain a personal knowledge base (PKBase) as interlinked markdown — an Obsidian-friendly vault. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files) into it, query/ask questions about it, or lint/audit/health-check it. Triggers on words like 'wiki', 'knowledge base', 'PKBase', 'ingest', 'add this source', 'my notes', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
 version: 1.0.0
 author: Zhihao Li
 license: MIT
 metadata:
-  hermes:
-    tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative]
-    category: research
-    related_skills: [pdf, obsidian, arxiv, agentic-research-ideas]
+  tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative, obsidian]
+  category: research
+  related_skills: [pdf, obsidian, agentic-research-ideas]
+  operations: [init, process, add, ingest, query, lint]
+  config:
+    path_env: PKBASE_PATH
+    path_default: "~/PKBase"
+    depth_level: "stored in SCHEMA.md (100 | 300 | 500)"
 ---
 
 # LLM Wiki for Personal Knowledge Base (PKBase)
@@ -24,37 +28,37 @@ Contradictions have already been flagged. Synthesis reflects everything ingested
 
 Use this skill when the user:
 - Asks to create, build, or start a wiki or knowledge base
-- Asks to ingest, add, or process a source into their wiki
+- Asks to ingest, add, or process a source — or a whole folder of files — into their wiki
 - Asks a question and an existing wiki is present at the configured path
 - Asks to lint, audit, or health-check their wiki
 - References their wiki, knowledge base, or "notes" in a research context
 
 ## PKBase Config
 
-- **Location:** Set via `PKBASE_PATH` environment variable (e.g. in `~/.hermes/.env`). If unset, defaults to `~/PKBase`:
+- **Location:** Set via `PKBASE_PATH` environment variable, or specify the path directly in the conversation. If unset, defaults to `~/PKBase`:
 
 ```bash
 PKBASE="${PKBASE_PATH:-$HOME/PKBase}"
 ```
 
-- **Depth Level:** Set via `DEPTH_LEVEL` environment variable (e.g. in `~/.hermes/.env`) for the user's preferred depth level. If none is set, default to 500 (College level).
+- **Depth Level:** Stored inside the PKBase itself (`SCHEMA.md` → `## Configuration`). This keeps the PKBase fully self-contained and portable across any agent framework — no external env config required. Default: `500` (Expert deep-dive) if not specified.
 
-The PKBase is just a directory of markdown files — open it in Obsidian, VS Code, or any editor. No database, no special tooling required.
+The PKBase is just a directory of markdown files — open it in Obsidian, VS Code, or any editor. No database, no special tooling required. All configuration lives inside the PKBase directory, so it can be moved, cloned, or synced without losing settings.
 
 ## Architecture: Three Layers
 
 ```
 PKBase/                    # Personal Knowledge Base
 ├── SCHEMA.md              # Conventions, structure rules, taxonomy, extraction rules
-├── index.md               # Sectioned content catalog with one-line summaries
-├── log.md                 # Chronological action log (append-only, rotated yearly)
-├── raw/                   # Layer 1: Immutable source material
-│   ├── articles/          # Web articles, clippings
-│   ├── papers/            # PDFs, arXiv papers
-│   ├── transcripts/       # Meeting notes, interviews
-│   └── assets/            # Images, diagrams referenced by sources
+├── index.md               # Sectioned content catalog with one-line summaries (the single master index)
+├── log.md                 # Chronological action log (append-only, rotated to log-YYYY-N-MMfirsttoMMlast.md at 500 entries)
+├── raw/                   # Layer 1: Immutable source material (auto-classified on ingest)
+│   ├── articles/          # Web articles, clippings, blog posts
+│   ├── papers/            # PDFs, arXiv papers (+ extracted .md alongside)
+│   ├── transcripts/       # Meeting notes, interviews, video/podcast transcripts
+│   ├── assets/            # Images, audio, video, diagrams referenced by sources
+│   ├── misc/              # Fallback for sources that fit no other category
 ├── wiki/                  # Layer 2: Agent-owned knowledge base
-│   ├── index.md           # Master index. Always keep updated
 │   ├── sources/           # Source summaries classified by domain and topic
 │   │   └── <domain>/
 │   │       └── <topic>/
@@ -95,20 +99,47 @@ wiki/
 
 **Layer 3 — The Schema:** `SCHEMA.md` defines structure, conventions, and tag taxonomy.
 
+## Raw Folder Organization (auto-classification)
+
+`raw/` is organized by **material type**, not by domain/topic — domain/topic classification happens on the `wiki/` side. The user can dump files anywhere (their own downloads folder, a project directory, …) and the agent files them into the right `raw/` subfolder automatically; the user never has to pre-sort.
+
+### Subfolder taxonomy
+
+| Subfolder | Holds | Typical extensions |
+|---|---|---|
+| `papers/` | Academic papers, technical reports, theses | `.pdf`, `.bib`, `.tex` (+ extracted `.md` alongside the PDF) |
+| `articles/` | Web articles, blog posts, documentation clippings | `.md`, `.html`, `.txt`, `.rst` |
+| `transcripts/` | Meeting notes, interviews, video/podcast transcripts | `.md`, `.txt`, `.vtt`, `.srt` |
+| `assets/` | Images, audio, video, and other media referenced by sources | `.png`, `.jpg`, `.svg`, `.mp3`, `.wav`, `.mp4` |
+| `misc/` | Anything that fits no other category | any |
+
+### Classification rules (applied in order)
+
+1. **Extension-first (deterministic):** images/audio/video → `assets/`; `.pdf`/`.bib`/`.tex` → `papers/`; `.html` → `articles/`; `.vtt`/`.srt` → `transcripts/`. Extracted text of a paper stays in `papers/` next to its PDF.
+2. **Semantic fallback (content-based):** for ambiguous text files (`.md`/`.txt`), read the first ~50 lines — paper structure (abstract, numbered sections, references, arXiv id) → `papers/`; Q&A format, speaker labels, or timestamps → `transcripts/`; article/blog layout → `articles/`; anything else → `misc/`.
+3. **User override wins:** if the user specifies a subfolder ("put these in raw/transcripts/"), follow it.
+
+### Copy & naming rules
+
+- Files are **copied** into `raw/`, never moved — the user's original folder is left intact.
+- Rename on copy to `YYYYMMDD-[author/source]-[topic-slug].[ext]` (date = the file's last-modified date if readable, else today).
+- Never overwrite an existing `raw/` file: on name collision append `-2`, `-3`, …
+- The subfolder set is extensible per PKBase via `SCHEMA.md` → `## Raw Subdirectories` (e.g., add `raw/datasets/` for a data-centric domain).
+
 ## Resuming an Existing PKBASE (CRITICAL — do this every session)
 
 When the user has an existing wiki, **always orient yourself before doing anything**:
 
-1. **Read `SCHEMA.md`** — understand the domain, conventions, and tag taxonomy.
+1. **Read `SCHEMA.md`** — understand the domain, conventions, tag taxonomy, and the configured **depth level** (from the `## Configuration` section).
 2. **Read `index.md`** — learn what pages exist and their summaries.
 3. **Scan recent `log.md`** — read the last 20-30 entries to understand recent activity.
 
 ```bash
 PKBASE="${PKBASE_PATH:-$HOME/PKBase}"
-# Orientation reads at session start
-read_file "$PKBASE/SCHEMA.md"
-read_file "$PKBASE/index.md"
-read_file "$PKBASE/log.md" offset=<last 30 lines>
+# Orientation reads at session start (with whatever file tools the environment provides):
+#   $PKBASE/SCHEMA.md
+#   $PKBASE/index.md
+#   last ~30 lines of $PKBASE/log.md
 ```
 
 Only after orientation should you ingest, query, or lint. This prevents:
@@ -117,7 +148,7 @@ Only after orientation should you ingest, query, or lint. This prevents:
 - Contradicting the schema's conventions
 - Repeating work already logged
 
-For large wikis (100+ pages), also run a quick `search_files` for the topic
+For large wikis (100+ pages), also run a quick file search for the topic
 at hand before creating anything new.
 
 ## Initializing a New PKBASE
@@ -126,11 +157,12 @@ When the user asks to create or start a PKBASE:
 
 1. Determine the PKBASE path (from `$PKBASE_PATH` env var, or ask the user; default `~/PKBase`)
 2. Ask the user what domain and possible topics the PKBASE covers — be specific
-3. Create the directory structure above using provided domain and topics. If topics is not available, just create the domain structure
-4. Write `SCHEMA.md` customized to the domain and topics (see template below)
-5. Write initial `index.md` with sectioned header
-6. Write initial `log.md` with creation entry
-7. Confirm the wiki is ready and suggest first sources to ingest
+3. Ask the user for their preferred **Depth Level** (`100` / `300` / `500`). Briefly explain each level (see `## Depth Levels` in the SCHEMA.md template below). If they are unsure, default to `500` (Expert deep-dive)
+4. Create the directory structure above using provided domain and topics. If topics is not available, just create the domain structure
+5. Write `SCHEMA.md` customized to the domain, topics, and **depth level** (see template below)
+6. Write initial `index.md` with sectioned header
+7. Write initial `log.md` with creation entry
+8. Confirm the wiki is ready and suggest first sources to ingest
 
 ### SCHEMA.md Template
 
@@ -138,6 +170,9 @@ Adapt to the user's domain and topics. The schema constrains agent behavior and 
 
 ```md
 # PKBase Schema
+
+## Configuration
+- **depth_level**: <100|300|500>  <!-- Set during initialization: 100=Feynman, 300=College, 500=Expert -->
 
 ## Domains & Topics
 [Define the scope of this knowledge base. List the primary domains and their sub-topics.]
@@ -156,15 +191,24 @@ Example:
 - When updating an existing concept page with information from a new source, append the new insights cleanly, append the new source to the `sources:` frontmatter array, and bump the `updated` date. Do NOT overwrite the entire file causing loss of existing knowledge.
 - Every new domain, topic, and wiki page must be added to the main `index.md` under the correct section
 - Every action must be appended to `log.md`
+- Raw files always live inside a `raw/` subfolder (never at the `raw/` root); new files are auto-classified into the subfolders listed below
+- All relative paths — in frontmatter (`sources:`, `related:`) and in `[[wikilinks]]` — are resolved from the PKBase root (e.g., `wiki/concepts/agents/discovery/agent-discovery.md`). In Obsidian, set the vault to the PKBase root so these resolve natively.
+
+## Page Thresholds
+- A concept gets its own page when it is (a) the central subject of a source, or (b) discussed substantively in 2+ sources. A single passing mention (footnote, aside) does NOT warrant a page — link to the nearest existing page instead.
+- When in doubt, merge into an existing concept page rather than creating a new one.
+
+## Raw Subdirectories
+Default: `papers/`, `articles/`, `transcripts/`, `assets/`, `misc/`. The agent classifies every new raw file into one of these automatically (extension-first, then a semantic content fallback). Extend for this domain if needed (e.g., `raw/datasets/`) and note per-folder classification hints here.
 
 ## Depth Levels
-The chosen depth level applies to BOTH the `summary.md` and the individual concept articles (`<concept-name>.md`). A single paragraph is never enough. Use extensive details, formulas, structure, and methodologies. Break summaries down into multiple specific sections or bulleted insights.
+The chosen depth level applies to BOTH the source summary (`wiki/sources/<domain>/<topic>/<source-slug>.md`) and the individual concept articles (`<concept-name>.md`). A single paragraph is never enough. Use extensive details, formulas, structure, and methodologies. Break summaries down into multiple specific sections or bulleted insights.
 - **100**: Explain like I'm 12 (Feynman technique, analogies, no jargon). Provide multiple angles and examples.
 - **300**: College level (technical but accessible, assumes some background). Detail multiple facets, but avoid deepest math.
 - **500**: Expert deep-dive (full technical detail, assumes domain expertise). Must include comprehensive, multi-point, structured summaries. Adapt the details rigorously to the source type (e.g., for ML papers: include specific loss functions, architectural parameters, methodology steps, and ablation findings. For non-ML articles, transcripts, or essays: include comprehensive logical breakdowns, specific arguments, nuanced historical contexts, or critical decisions).
 
 ## Source Summary Format
-For each raw source ingested, create a single `<source-slug>.md` summary file inside `wiki/sources/<domain>/<topic>/`. The summary depth is controlled by `Depth Level` in the above config setting.
+For each raw source ingested, create a single `<source-slug>.md` summary file inside `wiki/sources/<domain>/<topic>/`. The summary depth is controlled by the `depth_level` value in `SCHEMA.md` → `## Configuration`.
 
 ### ASCII Diagrams (required in every summary)
 Every source summary must include at least one ASCII diagram, regardless of depth level.
@@ -220,7 +264,7 @@ title: "Source Summary: <Source Title>"
 domain: [e.g., agents]
 topic: [e.g., discovery]
 created: YYYY-MM-DD
-source: raw/<articles|papers|transcripts>/<filename.md>
+source: raw/<subfolder>/<filename.md>
 depth: <100|300|500>
 articles_created: [article-one.md, article-two.md, ...]
 ---
@@ -233,8 +277,8 @@ articles_created: [article-one.md, article-two.md, ...]
 - <bullet summary of main topics>
 
 ## Wiki Articles From This Source
-- [Article One](article-one.md) - one line description
-- [Article Two](article-two.md) - one line description
+- [[article-one]] - one line description
+- [[article-two]] - one line description
 \`\`\`
 
 
@@ -249,7 +293,7 @@ topic: [e.g., discovery]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 sources: [raw/filename.md, ...]
-related: [other-article](other-article.md), [another-article](another-article.md)
+related: [wiki/concepts/agents/discovery/other-article.md, wiki/concepts/agents/discovery/another-article.md]
 tags: [concept-specific-tag, broader-topic-tag, genai-category-tag]
 ---
 
@@ -261,11 +305,13 @@ tags: [concept-specific-tag, broader-topic-tag, genai-category-tag]
 - ...
 
 ## Related Concepts
-- [linked article](linked-article.md) - brief note on relationship
+- [[linked-article]] - brief note on relationship
 
 ## Sources
 - raw/filename.md - what this source contributed
 \`\`\`
+
+**Frontmatter rule:** frontmatter values must be plain strings or flat string arrays — never `[[wikilinks]]`, markdown links, or nested arrays. `[[...]]` is only valid in markdown *body* text; in YAML it produces a nested array and breaks Obsidian Properties rendering of the entire frontmatter block. So `related:` and `sources:` store plain paths relative to the PKBase root (e.g., `wiki/concepts/agents/discovery/other-article.md`), and `[[wikilinks]]` are used in the body only — both resolve from the PKBase root (the Obsidian vault root).
 
 ## Tag Taxonomy
 Every article must have a `tags` field in its frontmatter with 3-7 lowercase-kebab-case tags:
@@ -288,7 +334,8 @@ Rule: every tag on a page must appear in this taxonomy. Reuse existing tags acro
   - Definition / explanation
   - Key facts and dates
   - Related concepts/entities (`[[wikilinks]]`)
-- **Comparison Pages (`wiki/comparisons/`)**: Side-by-side analyses spanning multiple sources.
+- **Comparison Pages (`wiki/comparisons/`)**: Side-by-side analyses spanning multiple sources. Frontmatter must list `sources:` (every raw source compared), `created`, and `tags`.
+- **Query Pages (`wiki/queries/`)**: Filed query answers worth keeping. Frontmatter must list `sources:` (the wiki pages or raw sources drawn from), `created`, and `tags`.
 
 ## Update Policy
 When new information conflicts with existing knowledge across sources:
@@ -301,7 +348,7 @@ When new information conflicts with existing knowledge across sources:
 
 ### index.md Template
 
-The index is sectioned by Domain and Topic. Each source entry should keep its tags in the index so `query` can use them later. Each entry is one line: wikilink + summary + tags.
+The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it is the single master index; there is no separate `wiki/index.md`. It is sectioned by Domain and Topic. Each source entry should keep its tags in the index so `query` can use them later. Each entry is one line: wikilink + summary + tags.
 
 ```markdown
 # Wiki Index
@@ -316,10 +363,10 @@ The index is sectioned by Domain and Topic. Each source entry should keep its ta
 #### [Topic Name 1] (e.g., discovery)
 
 **Sources**
-- [[sources/agents/discovery/source-slug|Source Title]] - One line summary of the source | tags: [tag-one, tag-two]
+- [[wiki/sources/agents/discovery/source-slug|Source Title]] - One line summary of the source | tags: [tag-one, tag-two]
 
 **Concepts**
-- [[concepts/agents/discovery/concept-name|Concept Name]] - One line summary of the concept | tags: [tag-one, tag-two]
+- [[wiki/concepts/agents/discovery/concept-name|Concept Name]] - One line summary of the concept | tags: [tag-one, tag-two]
 
 ## Comparisons
 <!-- Alphabetical within section -->
@@ -337,10 +384,15 @@ The index is sectioned by Domain and Topic. Each source entry should keep its ta
 > Chronological record of all wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 > Actions: add, ingest, update, query, lint, create, archive, delete
-> When this file exceeds 500 entries, rotate: rename to log-YYYY.md, start fresh.
+> When this file exceeds 500 entries, rotate: rename to `log-YYYY-N-MMfirsttoMMlast.md`, start fresh.
+> - `N` = 1 + the number of existing `log-YYYY-*.md` files (next free sequence number).
+> - `MMfirst` / `MMlast` = zero-padded months of the first and last entry in the file, taken from their `## [YYYY-MM-DD]` dates — e.g. `log-2026-1-01to04.md` covers Jan–Apr 2026.
+> - If all entries fall in a single month, use just that month: `log-2026-1-03.md`.
+> The rotated file is never overwritten.
 
 ## [YYYY-MM-DD] create | Wiki initialized
 - Domains & Topics configured
+- Depth level: <100|300|500>
 - Structure created with SCHEMA.md, index.md, log.md
 
 ## [YYYY-MM-DD] ingest | [Source Title]
@@ -370,20 +422,20 @@ Process a single unprocessed raw file and compile it into wiki articles.
   - Determine the source's domain and topic
 
 - **Phase 2: Build or update wiki content**
-  - **Determine Location:** Create the source folder: `wiki/domains/<domain>/<topic>/<source-slug>/`
+  - **Determine Location:** The source summary goes to `wiki/sources/<domain>/<topic>/<source-slug>.md`; each concept article goes to `wiki/concepts/<domain>/<topic>/<concept-name>.md`. Create the domain/topic directories as needed — no per-source folders.
   - **New concepts:** Extract 3-10 highly granular key concepts from the raw file. Adapt the concept type to the source material:
     - *For ML / Technical papers:* specific algorithms, architecture sub-components, datasets, distinct limitations, loss functions, or mathematical derivations.
     - *For general articles, transcripts, or essays:* primary arguments, mental models, key historical events, decision-making frameworks, or underlying principles.
     Break concepts down as far as they logically go rather than grouping them into a few broad topics.
   - **For each concept:**
-    - Use `search_files` to check if a wiki article already exists anywhere in `wiki/`
+    - Use the environment's file-search tool to check if a wiki article already exists anywhere in `wiki/`
     - If yes: update and expand the article, add new source to frontmatter, update the `updated` date
-    - If no: create a new article inside `wiki/domains/<domain>/<topic>/<source-slug>/`
+    - If no: create a new article at `wiki/concepts/<domain>/<topic>/<concept-name>.md`
   - **Cross-reference:** Every new or updated page must link to at least 2 other pages via [[wikilinks]].
   - **Backlink enforcement:** If linked pages do not link back, add backlinks in those related pages using relative paths across folders.
   - **Tags:** Use only tags defined in SCHEMA taxonomy. If a new tag is needed, add it to SCHEMA first with a short definition, then use it in articles.
-  - **Media integration:** Embed extracted original media files (images, videos, etc., located in `raw/assets/`) into the `summary.md` and concept wiki pages where they are contextually relevant. Use Obsidian-style media links (e.g., `![[filename.ext]]`).
-  - **Summary:** Create `wiki/domains/<domain>/<topic>/<source-slug>/summary.md` at the configured depth level
+  - **Media integration:** Embed extracted original media files (images, videos, etc., located in `raw/assets/`) into the source summary and concept wiki pages where they are contextually relevant. Use Obsidian-style media links (e.g., `![[filename.ext]]`).
+  - **Summary:** Create the source summary at `wiki/sources/<domain>/<topic>/<source-slug>.md` at the configured depth level
 
 - **Phase 3: Update navigation**
   - Add new pages to `index.md` under the correct Domain and Topic section, alphabetically
@@ -396,19 +448,19 @@ Process a single unprocessed raw file and compile it into wiki articles.
 When the user provides a source (URL, file, paste), integrate it into the wiki:
 
 - **Phase 1: Capture the raw source**
-  - **Original Files Constraint**: ALWAYS save the original files (PDFs, images, videos, audio) directly into the appropriate `raw/` subdirectory (e.g., `raw/papers/` for PDFs, `raw/images/` for Images, `raw/assets/` for media) in addition to extracting their text.
-  - URL → use `web_extract` to get markdown, save to `raw/articles/`
-  - PDF → save the original `.pdf` file to `raw/papers/`, then use `web_extract` (handles PDFs) to extract text, and save the markdown to `raw/papers/`
-  - Images/Videos/Audio → save the original media files to `raw/assets/`
-  - Pasted text → save to appropriate `raw/<articles|papers|transcripts>/` subdirectory
+  - **Original Files Constraint**: ALWAYS save the original files (PDFs, images, videos, audio) into the appropriate `raw/` subdirectory — classify per "Raw Folder Organization (auto-classification)" above — in addition to extracting their text. File paths given by the user are **copied** into `raw/`; the original file is left in place.
+  - URL → fetch the page to markdown (any web-extraction tool available in the environment), save to `raw/articles/`
+  - PDF → copy the original `.pdf` to `raw/papers/`, extract its text, and save the markdown alongside in `raw/papers/`
+  - Images/Videos/Audio → copy the original media files to `raw/assets/`
+  - Pasted text → save to the appropriate `raw/<articles|papers|transcripts>/` subdirectory (use the semantic fallback to pick which one)
   - Name the file descriptively using the format `YYYYMMDD-[author/source]-[topic-slug].[ext]`.
     Examples:
     - `raw/articles/20260419-karpathy-llm-wiki.md`
     - `raw/papers/20260408-arxiv-2509-07367.md`
 
 - **Phase 2: Check what already exists**
-  - Read `wiki/index.md` to understand existing articles
-  - Read `wiki/log.md` to understand what has been done before
+  - Read `index.md` to understand existing articles
+  - Read `log.md` to understand what has been done before
 
 - **Phase 3: Write or update wiki pages**
 For each unprocessed raw source file, call the reusable `process` command to process that file.
@@ -419,10 +471,9 @@ For each unprocessed raw source file, call the reusable `process` command to pro
     ## [YYYY-MM-DD] Add | <source description>
     - Domain: <domain>
     - Topic: <topic>
-    - Processed: raw/<articles|papers|transcripts>/<filename>
-    - Folder: wiki/domains/<domain>/<topic>/<source-slug>/
+    - Processed: raw/<subfolder>/<filename>
     - Created: <list of new wiki articles>
-    - Summary: wiki/domains/<domain>/<topic>/<source-slug>/summary.md (depth: <100|300|500>)
+    - Summary: wiki/sources/<domain>/<topic>/<source-slug>.md (depth: <100|300|500>)
     - Updated: <list of updated wiki articles>
     ```
 
@@ -433,20 +484,29 @@ A single source can trigger updates across 5-15 wiki pages. This is normal and d
 
 ### 3. Ingest
 
-**Command Argument:** `ingest`
+**Command Argument:** `ingest [source folder path]`
 
-Process all unprocessed files in `raw/` and compile them into wiki articles.
+Process all unprocessed files and compile them into wiki articles. Where the material comes from depends on the argument:
+
+- **No argument (default):** process files already inside `raw/`.
+- **A folder path** (any directory — typically the user's own pile of PDFs/articles living outside the PKBase): first **stage** the ingestible files from that folder into `raw/` (auto-classified + renamed per "Raw Folder Organization (auto-classification)"), then process them. Originals are **copied, never moved or modified**.
+
+- **Phase 0: Stage files into `raw/` (only when a folder path is given)**
+  1. List the files in the folder (recursively).
+  2. Skip non-ingestible files (spreadsheets, code, OS junk such as `Thumbs.db`/`.DS_Store`) and files already present in `raw/` (match by name + size).
+  3. For each remaining file: pick its `raw/` subfolder (extension-first, then semantic fallback), rename it to `YYYYMMDD-[author/source]-[topic-slug].[ext]`, and copy it there. On a name collision, append `-2`, `-3`, … — never overwrite.
+  4. Report the staged files (`original path → raw path`) before processing continues.
 
 - **Phase 1: Find unprocessed files**
   1. List all files in `raw/`
-  2. Read `log.md` to find which files have already been processed
-  3. Identify files in `raw/` that are NOT mentioned in `log.md`
+  2. Read `log.md` **and every rotated log (`log-*.md`)** to find which files have already been processed — after a rotation, most history lives in the rotated files, so checking only `log.md` would cause everything to be re-processed
+  3. Identify files in `raw/` that are NOT mentioned in any log file
 
 If all files are already processed, tell the user "Nothing new to ingest." and stop.
 
 - **Phase 2: Read existing wiki state**
-  1. Read `wiki/index.md` to understand existing articles and categories
-  2. Scan `wiki/` for existing article folders and files
+  1. Read `index.md` to understand existing articles and categories
+  2. Scan `wiki/sources/` and `wiki/concepts/` for existing summary and concept pages
 
 - **Phase 3: Process each new raw file**
 For each unprocessed raw file, call the reusable `process` command with that file path.
@@ -455,13 +515,13 @@ For each unprocessed raw file, call the reusable `process` command with that fil
   - Append to `log.md` as a batch summary with one per-source block:
     ```md
     ## [YYYY-MM-DD] Ingest | Batch Summary
+    - Staged: <n> files copied from <source folder>   <!-- only when a folder path was given -->
     - <source description>
       - Domain: <domain>
       - Topic: <topic>
-      - Processed: raw/<articles|papers|transcripts>/<filename>
-      - Folder: wiki/domains/<domain>/<topic>/<source-slug>/
+      - Processed: raw/<subfolder>/<filename>
       - Created files: <list of new wiki articles>
-      - Summary: wiki/domains/<domain>/<topic>/<source-slug>/summary.md (depth: <100|300|500>)
+      - Summary: wiki/sources/<domain>/<topic>/<source-slug>.md (depth: <100|300|500>)
       - Updated files: <list of updated wiki articles>
     - <source description>
       - ...
@@ -478,8 +538,8 @@ When the user asks a question about the knowledge base. Searches wiki articles a
 
 - **Phase 1: Read `index.md`** to identify relevant pages.
 - **Phase 2: Search by tags**: identify tags most relevant to the question, then find articles sharing those tags in `index.md`.
-- **Phase 3: For wikis with 100+ pages**, also `search_files` across all `.md` files for keywords related to the question — the index alone may miss relevant content.
-- **Phase 4: Read the most relevant wiki articles** using `read_file`. If wiki articles reference `raw/` sources and more detail is needed, read those too.
+- **Phase 3: For wikis with 100+ pages**, also search across all `.md` files for keywords related to the question — the index alone may miss relevant content.
+- **Phase 4: Read the most relevant wiki articles.** If wiki articles reference `raw/` sources and more detail is needed, read those too.
 - **Phase 5: Synthesize an answer** from the compiled knowledge. Cite the wiki pages you drew from: "Based on [[page-a]] and [[page-b]]..."
 - **Phase 6: File valuable answers back** — if the answer is a substantial comparison, deep dive, or novel synthesis, create a page in `queries/` or `comparisons/`. Don't file trivial lookups — only answers that would be painful to re-derive.
 - **Phase 7: Update `log.md`** with the query and whether it was filed.
@@ -522,7 +582,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Scan all wiki articles for `[[wikilink]]` syntax that point to files that do not exist.
   - Report each finding as:
   ```
-  BROKEN LINK: [[wikilink]] in wiki/domains/<domain>/<topic>/<source-slug>/some-article.md
+  BROKEN LINK: [[wikilink]] in wiki/<sources|concepts>/<domain>/<topic>/<file>.md
   ```
 
 - **Phase 2: Legacy Markdown Links**
@@ -530,7 +590,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - These should be converted to Obsidian-style `[[link]]` syntax to match the PKBase standard.
   - Report each finding as:
   ```
-  LEGACY LINK: [text](path.md) in wiki/<source-slug>/some-article.md — convert to [[link]]
+  LEGACY LINK: [text](path.md) in wiki/<sources|concepts>/<domain>/<topic>/<file>.md — convert to [[link]]
   ```
 
 - **Phase 3: Missing articles (concept frequency audit)**
@@ -542,7 +602,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   MISSING ARTICLE: "<concept>" mentioned in N articles but has no wiki page
   ```
 
-- **Phase 4: Index consistency (`wiki/index.md` vs filesystem)**
+- **Phase 4: Index consistency (`index.md` vs filesystem)**
   - Compare index entries against actual files under `wiki/`.
   - Detect:
     - files that exist but are not listed in index
@@ -550,39 +610,39 @@ When the user asks to run a health check on the wiki, run the checks below in or
     - summary files listed but absent
   - Report each finding as:
   ```
-  INDEX STALE: wiki/<source-slug>/<file>.md exists but not in index
-  INDEX GHOST: wiki/<source-slug>/<file>.md listed in index but file missing
+  INDEX STALE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md exists but not in index
+  INDEX GHOST: wiki/<sources|concepts>/<domain>/<topic>/<file>.md listed in index but file missing
   ```
 
 - **Phase 5: Source traceability (`frontmatter.sources`)**
-  - Ensure every wiki article has at least one source in frontmatter.
+  - Ensure every wiki page has at least one source in frontmatter (`source:` for source summaries, `sources:` for concept pages).
   - Validate that each source path points to an existing file under `raw/`.
   - Report each finding as:
   ```
-  NO SOURCE: wiki/<source-slug>/<file>.md has no sources listed
-  MISSING SOURCE: wiki/<source-slug>/<file>.md references raw/<file>.md which does not exist
+  NO SOURCE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md has no source listed
+  MISSING SOURCE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md references raw/<file>.md which does not exist
   ```
 
-- **Phase 6: Folder structure validation**
-  - For each source folder under `wiki/`, verify:
-    - a summary file named `summary-<folder-name>.md` exists
-    - at least one non-summary article file exists
+- **Phase 6: Summary completeness**
+  - For each source recorded in `log.md` or any rotated log (`log-*.md`), verify:
+    - a summary file exists at `wiki/sources/<domain>/<topic>/<source-slug>.md`
+    - the summary's `articles_created:` frontmatter lists at least one concept page, and those pages exist on disk
   - Report each finding as:
   ```
-  MISSING SUMMARY: wiki/<source-slug>/ has no summary-<source-slug>.md
-  EMPTY FOLDER: wiki/<source-slug>/ has no article files
+  MISSING SUMMARY: raw source <filename> was logged but wiki/sources/<domain>/<topic>/<source-slug>.md does not exist
+  EMPTY SUMMARY: wiki/sources/<domain>/<topic>/<source-slug>.md exists but created no concept pages
   ```
 
 - **Phase 7: Stale backlinks (`related:` validation)**
   - Parse `related:` entries in frontmatter and verify each referenced article exists.
   - Report each finding as:
   ```
-  STALE BACKLINK: wiki/<source-slug>/<file>.md links to a non-existent article
+  STALE BACKLINK: wiki/<sources|concepts>/<domain>/<topic>/<file>.md links to a non-existent article
   ```
 
 - **Phase 8: Optional integrity checks**
   - Tag audit: list tags in use and flag tags not declared in `SCHEMA.md` taxonomy.
-  - Log rotation: if `log.md` exceeds 500 entries, rotate to `log-YYYY.md`.
+  - Log rotation: if `log.md` exceeds 500 entries, rotate to `log-YYYY-N-MMfirsttoMMlast.md` (naming rule in the log.md template — never overwrite an existing rotated log).
 
 - **Phase 9: Lint report + logging**
   - Group findings by severity priority:
@@ -599,7 +659,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Missing articles: <count>
   - Index stale/ghost entries: <count>
   - Source traceability issues: <count>
-  - Folder structure issues: <count>
+  - Summary completeness issues: <count>
   - Stale backlinks: <count>
   ```
 
@@ -629,28 +689,19 @@ After reporting, ask the user if they want to auto-fix:
 
 ### Searching
 
-Use these tool patterns to navigate the PKBase efficiently:
+Use the file tools available in your environment to navigate the PKBase efficiently:
 
-```bash
-# Find pages by content within the PKBase
-search_files "transformer" path="$PKBASE/wiki" file_glob="*.md"
-
-# Find pages by filename
-search_files "*.md" target="files" path="$PKBASE/wiki"
-
-# Find pages by frontmatter tag
-search_files "tags:.*alignment" path="$PKBASE/wiki" file_glob="*.md"
-
-# Read recent log activity
-read_file "$PKBASE/log.md" offset=<last 20 lines>
-```
+- **Find pages by content:** full-text search `$PKBASE/wiki` for a keyword (e.g. "transformer") across `*.md` files
+- **Find pages by filename:** list/glob `*.md` under `$PKBASE/wiki`
+- **Find pages by frontmatter tag:** search for `tags:.*<tag>` under `$PKBASE/wiki`
+- **Read recent log activity:** read the last ~20 lines of `$PKBASE/log.md`
 
 ### Archiving
 
 When content is fully superseded or the domains/topics scope changes:
 1. Create a `_archive/` directory at the PKBase root if it doesn't exist.
-2. Move the page to `_archive/` while preserving its domain structure (e.g., move to `_archive/domains/agents/discovery/old-slug/old-concept.md`).
-3. Remove the corresponding entry from `wiki/index.md`.
+2. Move the page to `_archive/` while preserving its domain structure (e.g., move to `_archive/concepts/agents/discovery/old-concept.md`).
+3. Remove the corresponding entry from `index.md`.
 4. Update any pages that linked to it — replace the `[[wikilink]]` with plain text + "(archived)".
 5. Append an archive action to `log.md`.
 
@@ -670,65 +721,10 @@ For best results:
 If using the Obsidian skill alongside this one, set `OBSIDIAN_VAULT_PATH` to the
 same directory as the wiki path.
 
-### Obsidian Headless (servers and headless machines)
-
-On machines without a display, use `obsidian-headless` instead of the desktop app.
-It syncs vaults via Obsidian Sync without a GUI — perfect for agents running on
-servers that write to the wiki while Obsidian desktop reads it on another device.
-
-**Setup:**
-```bash
-# Requires Node.js 22+
-npm install -g obsidian-headless
-
-# Login (requires Obsidian account with Sync subscription)
-ob login --email <email> --password '<password>'
-
-# Create a remote vault for the wiki
-ob sync-create-remote --name "LLM Wiki"
-
-# Connect the wiki directory to the vault
-cd ~/wiki
-ob sync-setup --vault "<vault-id>"
-
-# Initial sync
-ob sync
-
-# Continuous sync (foreground — use systemd for background)
-ob sync --continuous
-```
-
-**Continuous background sync via systemd:**
-```ini
-# ~/.config/systemd/user/obsidian-wiki-sync.service
-[Unit]
-Description=Obsidian LLM Wiki Sync
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-ExecStart=/path/to/ob sync --continuous
-WorkingDirectory=/home/user/wiki
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-```
-
-```bash
-systemctl --user daemon-reload
-systemctl --user enable --now obsidian-wiki-sync
-# Enable linger so sync survives logout:
-sudo loginctl enable-linger $USER
-```
-
-This lets the agent write to `~/wiki` on a server while you browse the same
-vault in Obsidian on your laptop/phone — changes appear within seconds.
-
 ## Pitfalls
 
 - **Never modify files in `raw/`** — sources are immutable. Corrections go in wiki pages.
+- **Stage by copying, never by moving** — when ingesting from an external folder, the user's originals stay where they are; `raw/` receives copies. Never overwrite an existing `raw/` file (rename with `-2`, `-3`, …).
 - **Always orient first** — read SCHEMA + index + recent log before any operation in a new session.
   Skipping this causes duplicates and missed cross-references.
 - **Always update index.md and log.md** — skipping this makes the wiki degrade. These are the
@@ -744,7 +740,7 @@ vault in Obsidian on your laptop/phone — changes appear within seconds.
   200 lines. Move detailed analysis to dedicated deep-dive pages.
 - **Ask before mass-updating** — if an ingest would touch 10+ existing pages, confirm
   the scope with the user first.
-- **Rotate the log** — when log.md exceeds 500 entries, rename it `log-YYYY.md` and start fresh.
+- **Rotate the log** — when log.md exceeds 500 entries, rename it `log-YYYY-N-MMfirsttoMMlast.md` (sequence number + the month range of the entries it holds) and start fresh. Never overwrite a rotated log — it holds the processing history.
   The agent should check log size during lint.
 - **Handle contradictions explicitly** — don't silently overwrite. Note both claims with dates,
   mark in frontmatter, flag for user review.
