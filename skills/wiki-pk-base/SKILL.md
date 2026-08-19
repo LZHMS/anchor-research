@@ -52,12 +52,12 @@ PKBase/                    # Personal Knowledge Base
 ├── SCHEMA.md              # Conventions, structure rules, taxonomy, extraction rules
 ├── index.md               # Sectioned content catalog with one-line summaries (the single master index)
 ├── log.md                 # Chronological action log (append-only, rotated to log-YYYY-N-MMfirsttoMMlast.md at 500 entries)
-├── raw/                   # Layer 1: Immutable source material (auto-classified on ingest)
-│   ├── articles/          # Web articles, clippings, blog posts
-│   ├── papers/            # PDFs, arXiv papers (+ extracted .md alongside)
-│   ├── transcripts/       # Meeting notes, interviews, video/podcast transcripts
-│   ├── assets/            # Images, audio, video, diagrams referenced by sources
-│   ├── misc/              # Fallback for sources that fit no other category
+├── raw/                   # Layer 1: Immutable source material (3-level: <material-type>/<domain>/<topic>/)
+│   ├── articles/<domain>/<topic>/   # Web articles, clippings, blog posts
+│   ├── papers/<domain>/<topic>/     # PDFs, arXiv papers (+ extracted .md alongside)
+│   ├── transcripts/<domain>/<topic>/  # Meeting notes, interviews, video/podcast transcripts
+│   ├── assets/<domain>/<topic>/      # Images, audio, video, diagrams referenced by sources
+│   └── misc/<domain>/<topic>/        # Fallback for sources that fit no other category
 ├── wiki/                  # Layer 2: Agent-owned knowledge base
 │   ├── sources/           # Source summaries classified by domain and topic
 │   │   └── <domain>/
@@ -67,8 +67,14 @@ PKBase/                    # Personal Knowledge Base
 │   │   └── <domain>/
 │   │       └── <topic>/
 │   │           └── <concept-name>.md  # Merged knowledge about a specific concept
-│   ├── comparisons/       # Layer 2: Side-by-side analyses
-│   └── queries/           # Layer 2: Filed query results worth keeping
+│   ├── comparisons/       # Layer 2: Side-by-side analyses, by domain and topic
+│   │   └── <domain>/
+│   │       └── <topic>/
+│   │           └── <comparison-slug>.md
+│   └── queries/           # Layer 2: Filed query results worth keeping, by domain and topic
+│       └── <domain>/
+│           └── <topic>/
+│               └── <query-slug>.md
 ```
 
 **Layer 1 — Raw Sources:** Immutable source material. The agent reads but never modifies these.
@@ -99,11 +105,22 @@ wiki/
 
 **Layer 3 — The Schema:** `SCHEMA.md` defines structure, conventions, and tag taxonomy.
 
-## Raw Folder Organization (auto-classification)
+## Raw Folder Organization (3-level, auto-classification)
 
-`raw/` is organized by **material type**, not by domain/topic — domain/topic classification happens on the `wiki/` side. The user can dump files anywhere (their own downloads folder, a project directory, …) and the agent files them into the right `raw/` subfolder automatically; the user never has to pre-sort.
+`raw/` is **three levels deep**, mirroring the wiki's `<domain>/<topic>` so a source's raw file and its wiki summaries/concepts share the same categories:
 
-### Subfolder taxonomy
+```
+raw/<material-type>/<domain>/<topic>/<filename>
+```
+
+- **Level 1 — material type:** `papers/`, `articles/`, `transcripts/`, `assets/`, `misc/` (auto-classified by extension/content below).
+- **Level 2 — domain / Level 3 — topic:** the **same** domain and topic the source gets on the `wiki/` side. Reuse the SCHEMA domain/topic taxonomy.
+
+The user can dump files anywhere (their own downloads folder, a project directory, …) and the agent files them into the right `raw/` path automatically; the user never has to pre-sort.
+
+Example: a motion-generation paper lands at `raw/papers/multimodal-learning/interactive-motion/20260812-nvidia-ardy-interactive-motion-generation.md`, with its summary at `wiki/sources/multimodal-learning/interactive-motion/...`.
+
+### Level-1 material-type taxonomy
 
 | Subfolder | Holds | Typical extensions |
 |---|---|---|
@@ -115,16 +132,22 @@ wiki/
 
 ### Classification rules (applied in order)
 
+**Level 1 — material type:**
 1. **Extension-first (deterministic):** images/audio/video → `assets/`; `.pdf`/`.bib`/`.tex` → `papers/`; `.html` → `articles/`; `.vtt`/`.srt` → `transcripts/`. Extracted text of a paper stays in `papers/` next to its PDF.
 2. **Semantic fallback (content-based):** for ambiguous text files (`.md`/`.txt`), read the first ~50 lines — paper structure (abstract, numbered sections, references, arXiv id) → `papers/`; Q&A format, speaker labels, or timestamps → `transcripts/`; article/blog layout → `articles/`; anything else → `misc/`.
-3. **User override wins:** if the user specifies a subfolder ("put these in raw/transcripts/"), follow it.
+
+**Levels 2–3 — domain / topic:**
+3. Derive the domain and topic from the content — the same determination used to place the source summary under `wiki/sources/<domain>/<topic>/`. Reuse the closest existing domain/topic from SCHEMA, or propose a new one (and add it to SCHEMA).
+4. If it genuinely cannot be determined, fall back to `misc/uncategorized/uncategorized/` and correct it during processing.
+
+**Override:** the user's stated material type, domain, or topic always wins.
 
 ### Copy & naming rules
 
 - Files are **copied** into `raw/`, never moved — the user's original folder is left intact.
-- Rename on copy to `YYYYMMDD-[author/source]-[topic-slug].[ext]` (date = the file's last-modified date if readable, else today).
+- Rename on copy to `YYYYMMDD-[author/source]-[topic-slug].[ext]` (date = the file's last-modified date if readable, else today) and place it at `raw/<material-type>/<domain>/<topic>/`.
 - Never overwrite an existing `raw/` file: on name collision append `-2`, `-3`, …
-- The subfolder set is extensible per PKBase via `SCHEMA.md` → `## Raw Subdirectories` (e.g., add `raw/datasets/` for a data-centric domain).
+- The material-type set (Level 1) is extensible per PKBase via `SCHEMA.md` → `## Raw Subdirectories` (e.g., add `raw/datasets/` for a data-centric domain).
 
 ## Resuming an Existing PKBASE (CRITICAL — do this every session)
 
@@ -184,14 +207,15 @@ Example:
   - Topics: `theory-building`, `design-patterns`
 
 ## Conventions
-- Directory structure MUST follow: `wiki/sources/<domain>/<topic>/` (for summaries) and `wiki/concepts/<domain>/<topic>/` (for concepts)
+- Directory structure MUST follow the three-level `wiki/<page-type>/<domain>/<topic>/` pattern for ALL page types: `wiki/sources/<domain>/<topic>/` (summaries), `wiki/concepts/<domain>/<topic>/` (concepts), `wiki/comparisons/<domain>/<topic>/` (comparisons), `wiki/queries/<domain>/<topic>/` (filed queries). No page lives directly under a `wiki/<page-type>/` root.
 - File names: lowercase, hyphens, no spaces (e.g., `agent-discovery.md`)
 - Every wiki page (summary, concept, etc.) starts with YAML frontmatter (see below)
 - Use `[[wikilinks]]` to link between pages (minimum 2 outbound links per page)
 - When updating an existing concept page with information from a new source, append the new insights cleanly, append the new source to the `sources:` frontmatter array, and bump the `updated` date. Do NOT overwrite the entire file causing loss of existing knowledge.
 - Every new domain, topic, and wiki page must be added to the main `index.md` under the correct section
 - Every action must be appended to `log.md`
-- Raw files always live inside a `raw/` subfolder (never at the `raw/` root); new files are auto-classified into the subfolders listed below
+- Raw files always live three levels deep at `raw/<material-type>/<domain>/<topic>/` (never at the `raw/` root); new files are auto-classified — material type by extension/content, domain+topic matching the wiki location
+- **Formulas are always LaTeX, never code-style backticks.** Inline math: `$...$`; display math: `$$...$$`. Never wrap a formula in backticks (`` `...` ``) — that renders it as a monospace code span and Obsidian will not typeset it. Write `$x_{1:T} = [m_{\text{root},1:T};\, x_{\text{body},1:T}] \in \mathbb{R}^{T \times D}$`, not `` `x_{1:T} = [m_root; x_body]` ``. (ASCII diagrams stay in code fences — this rule is about math only.)
 - All relative paths — in frontmatter (`sources:`, `related:`) and in `[[wikilinks]]` — are resolved from the PKBase root (e.g., `wiki/concepts/agents/discovery/agent-discovery.md`). In Obsidian, set the vault to the PKBase root so these resolve natively.
 
 ## Page Thresholds
@@ -199,7 +223,11 @@ Example:
 - When in doubt, merge into an existing concept page rather than creating a new one.
 
 ## Raw Subdirectories
-Default: `papers/`, `articles/`, `transcripts/`, `assets/`, `misc/`. The agent classifies every new raw file into one of these automatically (extension-first, then a semantic content fallback). Extend for this domain if needed (e.g., `raw/datasets/`) and note per-folder classification hints here.
+Every raw file lives at three levels: `raw/<material-type>/<domain>/<topic>/<filename>`.
+- **Level 1 (material type)** — default `papers/`, `articles/`, `transcripts/`, `assets/`, `misc/`; auto-classified (extension-first, then a semantic content fallback). Extend for this domain if needed (e.g., `raw/datasets/`).
+- **Level 2 (domain) / Level 3 (topic)** — mirror the wiki's `<domain>/<topic>` (see "Domains & Topics" above) so raw material and its summaries/concepts share the same categories.
+
+[Note any per-folder classification hints or domain-specific subfolders here.]
 
 ## Depth Levels
 The chosen depth level applies to BOTH the source summary (`wiki/sources/<domain>/<topic>/<source-slug>.md`) and the individual concept articles (`<concept-name>.md`). A single paragraph is never enough. Use extensive details, formulas, structure, and methodologies. Break summaries down into multiple specific sections or bulleted insights.
@@ -264,7 +292,7 @@ title: "Source Summary: <Source Title>"
 domain: [e.g., agents]
 topic: [e.g., discovery]
 created: YYYY-MM-DD
-source: raw/<subfolder>/<filename.md>
+source: raw/<material-type>/<domain>/<topic>/<filename.md>
 depth: <100|300|500>
 articles_created: [article-one.md, article-two.md, ...]
 ---
@@ -292,7 +320,7 @@ domain: [e.g., agents]
 topic: [e.g., discovery]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-sources: [raw/filename.md, ...]
+sources: [raw/<material-type>/<domain>/<topic>/filename.md, ...]
 related: [wiki/concepts/agents/discovery/other-article.md, wiki/concepts/agents/discovery/another-article.md]
 tags: [concept-specific-tag, broader-topic-tag, genai-category-tag]
 ---
@@ -308,10 +336,10 @@ tags: [concept-specific-tag, broader-topic-tag, genai-category-tag]
 - [[linked-article]] - brief note on relationship
 
 ## Sources
-- raw/filename.md - what this source contributed
+- [[wiki/sources/<domain>/<topic>/<source-slug>|<Source Title>]] - what this source contributed
 \`\`\`
 
-**Frontmatter rule:** frontmatter values must be plain strings or flat string arrays — never `[[wikilinks]]`, markdown links, or nested arrays. `[[...]]` is only valid in markdown *body* text; in YAML it produces a nested array and breaks Obsidian Properties rendering of the entire frontmatter block. So `related:` and `sources:` store plain paths relative to the PKBase root (e.g., `wiki/concepts/agents/discovery/other-article.md`), and `[[wikilinks]]` are used in the body only — both resolve from the PKBase root (the Obsidian vault root).
+**Frontmatter rule:** frontmatter values must be plain strings or flat string arrays — never `[[wikilinks]]`, markdown links, or nested arrays. `[[...]]` is only valid in markdown *body* text; in YAML it produces a nested array and breaks Obsidian Properties rendering of the entire frontmatter block. So `related:` and `sources:` store **plain paths** relative to the PKBase root (e.g., `wiki/concepts/agents/discovery/other-article.md`) — these are NOT clickable in Obsidian's Properties panel (a hard Obsidian limitation, not a bug), and they exist for Dataview queries and the agent's own path resolution. **The clickable links live in the body:** `## Related Concepts` and `## Sources` must use `[[wikilinks]]` (see the format above — `## Sources` links to the source-summary page, not the raw file). Both frontmatter paths and body `[[wikilinks]]` resolve from the PKBase root (the Obsidian vault root).
 
 ## Tag Taxonomy
 Every article must have a `tags` field in its frontmatter with 3-7 lowercase-kebab-case tags:
@@ -334,8 +362,8 @@ Rule: every tag on a page must appear in this taxonomy. Reuse existing tags acro
   - Definition / explanation
   - Key facts and dates
   - Related concepts/entities (`[[wikilinks]]`)
-- **Comparison Pages (`wiki/comparisons/`)**: Side-by-side analyses spanning multiple sources. Frontmatter must list `sources:` (every raw source compared), `created`, and `tags`.
-- **Query Pages (`wiki/queries/`)**: Filed query answers worth keeping. Frontmatter must list `sources:` (the wiki pages or raw sources drawn from), `created`, and `tags`.
+- **Comparison Pages (`wiki/comparisons/<domain>/<topic>/`)**: Side-by-side analyses spanning multiple sources. File at `wiki/comparisons/<domain>/<topic>/<comparison-slug>.md` using the same domain/topic as the sources compared. Frontmatter must list `sources:` (every raw source compared), `created`, and `tags`.
+- **Query Pages (`wiki/queries/<domain>/<topic>/`)**: Filed query answers worth keeping. File at `wiki/queries/<domain>/<topic>/<query-slug>.md` using the domain/topic the query belongs to. Frontmatter must list `sources:` (the wiki pages or raw sources drawn from), `created`, and `tags`.
 
 ## Update Policy
 When new information conflicts with existing knowledge across sources:
@@ -369,9 +397,12 @@ The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it i
 - [[wiki/concepts/agents/discovery/concept-name|Concept Name]] - One line summary of the concept | tags: [tag-one, tag-two]
 
 ## Comparisons
-<!-- Alphabetical within section -->
+<!-- Alphabetical within section, grouped by domain/topic like the pages above -->
+- [[wiki/comparisons/agents/discovery/discovery-mechanisms-comparison|Discovery Mechanisms Compared]] - One line summary | tags: [tag-one, tag-two]
 
 ## Queries
+<!-- Alphabetical within section, grouped by domain/topic -->
+- [[wiki/queries/agents/discovery/how-does-discovery-scale|How Does Discovery Scale?]] - One line summary | tags: [tag-one, tag-two]
 ```
 
 **Scaling rule:** When any section exceeds 50 entries, split it into sub-sections by first letter or sub-domain. When the index exceeds 200 entries total, create a `_meta/topic-map.md` that groups pages by theme for faster navigation.
@@ -419,7 +450,7 @@ Process a single unprocessed raw file and compile it into wiki articles.
 - **Phase 1: Read the source**
   - Read the full raw file
   - Derive a source slug from the raw filename (strip the `YYYYMMDD-` date prefix if present, otherwise use the filename as is)
-  - Determine the source's domain and topic
+  - Determine the source's domain and topic — for an already-staged file, read them from its raw path `raw/<material-type>/<domain>/<topic>/`; otherwise derive them from the content
 
 - **Phase 2: Build or update wiki content**
   - **Determine Location:** The source summary goes to `wiki/sources/<domain>/<topic>/<source-slug>.md`; each concept article goes to `wiki/concepts/<domain>/<topic>/<concept-name>.md`. Create the domain/topic directories as needed — no per-source folders.
@@ -434,7 +465,7 @@ Process a single unprocessed raw file and compile it into wiki articles.
   - **Cross-reference:** Every new or updated page must link to at least 2 other pages via [[wikilinks]].
   - **Backlink enforcement:** If linked pages do not link back, add backlinks in those related pages using relative paths across folders.
   - **Tags:** Use only tags defined in SCHEMA taxonomy. If a new tag is needed, add it to SCHEMA first with a short definition, then use it in articles.
-  - **Media integration:** Embed extracted original media files (images, videos, etc., located in `raw/assets/`) into the source summary and concept wiki pages where they are contextually relevant. Use Obsidian-style media links (e.g., `![[filename.ext]]`).
+  - **Media integration:** Embed extracted original media files (images, videos, etc., located in `raw/assets/<domain>/<topic>/`) into the source summary and concept wiki pages where they are contextually relevant. Use Obsidian-style media links (e.g., `![[filename.ext]]`) — these resolve by file name, so nesting does not break them.
   - **Summary:** Create the source summary at `wiki/sources/<domain>/<topic>/<source-slug>.md` at the configured depth level
 
 - **Phase 3: Update navigation**
@@ -448,15 +479,15 @@ Process a single unprocessed raw file and compile it into wiki articles.
 When the user provides a source (URL, file, paste), integrate it into the wiki:
 
 - **Phase 1: Capture the raw source**
-  - **Original Files Constraint**: ALWAYS save the original files (PDFs, images, videos, audio) into the appropriate `raw/` subdirectory — classify per "Raw Folder Organization (auto-classification)" above — in addition to extracting their text. File paths given by the user are **copied** into `raw/`; the original file is left in place.
-  - URL → fetch the page to markdown (any web-extraction tool available in the environment), save to `raw/articles/`
-  - PDF → copy the original `.pdf` to `raw/papers/`, extract its text, and save the markdown alongside in `raw/papers/`
-  - Images/Videos/Audio → copy the original media files to `raw/assets/`
-  - Pasted text → save to the appropriate `raw/<articles|papers|transcripts>/` subdirectory (use the semantic fallback to pick which one)
+  - **Original Files Constraint**: ALWAYS save the original files (PDFs, images, videos, audio) into the appropriate 3-level `raw/` path `raw/<material-type>/<domain>/<topic>/` — classify per "Raw Folder Organization (3-level, auto-classification)" above — in addition to extracting their text. File paths given by the user are **copied** into `raw/`; the original file is left in place.
+  - URL → fetch the page to markdown (any web-extraction tool available in the environment), save under `raw/articles/<domain>/<topic>/`
+  - PDF → copy the original `.pdf` to `raw/papers/<domain>/<topic>/`, extract its text, and save the markdown alongside in the same folder
+  - Images/Videos/Audio → copy the original media files to `raw/assets/<domain>/<topic>/`
+  - Pasted text → save under `raw/<articles|papers|transcripts>/<domain>/<topic>/` (use the semantic fallback to pick the material type)
   - Name the file descriptively using the format `YYYYMMDD-[author/source]-[topic-slug].[ext]`.
     Examples:
-    - `raw/articles/20260419-karpathy-llm-wiki.md`
-    - `raw/papers/20260408-arxiv-2509-07367.md`
+    - `raw/articles/multimodal-learning/interactive-motion/20260419-karpathy-llm-wiki.md`
+    - `raw/papers/multimodal-learning/interactive-motion/20260408-arxiv-2509-07367.md`
 
 - **Phase 2: Check what already exists**
   - Read `index.md` to understand existing articles
@@ -471,7 +502,7 @@ For each unprocessed raw source file, call the reusable `process` command to pro
     ## [YYYY-MM-DD] Add | <source description>
     - Domain: <domain>
     - Topic: <topic>
-    - Processed: raw/<subfolder>/<filename>
+    - Processed: raw/<material-type>/<domain>/<topic>/<filename>
     - Created: <list of new wiki articles>
     - Summary: wiki/sources/<domain>/<topic>/<source-slug>.md (depth: <100|300|500>)
     - Updated: <list of updated wiki articles>
@@ -489,12 +520,12 @@ A single source can trigger updates across 5-15 wiki pages. This is normal and d
 Process all unprocessed files and compile them into wiki articles. Where the material comes from depends on the argument:
 
 - **No argument (default):** process files already inside `raw/`.
-- **A folder path** (any directory — typically the user's own pile of PDFs/articles living outside the PKBase): first **stage** the ingestible files from that folder into `raw/` (auto-classified + renamed per "Raw Folder Organization (auto-classification)"), then process them. Originals are **copied, never moved or modified**.
+- **A folder path** (any directory — typically the user's own pile of PDFs/articles living outside the PKBase): first **stage** the ingestible files from that folder into `raw/` (auto-classified into the 3-level path + renamed per "Raw Folder Organization (3-level, auto-classification)"), then process them. Originals are **copied, never moved or modified**.
 
 - **Phase 0: Stage files into `raw/` (only when a folder path is given)**
   1. List the files in the folder (recursively).
   2. Skip non-ingestible files (spreadsheets, code, OS junk such as `Thumbs.db`/`.DS_Store`) and files already present in `raw/` (match by name + size).
-  3. For each remaining file: pick its `raw/` subfolder (extension-first, then semantic fallback), rename it to `YYYYMMDD-[author/source]-[topic-slug].[ext]`, and copy it there. On a name collision, append `-2`, `-3`, … — never overwrite.
+  3. For each remaining file: pick its 3-level `raw/` path `raw/<material-type>/<domain>/<topic>/` (material type by extension-first/semantic fallback, domain+topic from the content — see "Raw Folder Organization (3-level, auto-classification)"), rename it to `YYYYMMDD-[author/source]-[topic-slug].[ext]`, and copy it there. On a name collision, append `-2`, `-3`, … — never overwrite.
   4. Report the staged files (`original path → raw path`) before processing continues.
 
 - **Phase 1: Find unprocessed files**
@@ -519,7 +550,7 @@ For each unprocessed raw file, call the reusable `process` command with that fil
     - <source description>
       - Domain: <domain>
       - Topic: <topic>
-      - Processed: raw/<subfolder>/<filename>
+      - Processed: raw/<material-type>/<domain>/<topic>/<filename>
       - Created files: <list of new wiki articles>
       - Summary: wiki/sources/<domain>/<topic>/<source-slug>.md (depth: <100|300|500>)
       - Updated files: <list of updated wiki articles>
@@ -541,7 +572,7 @@ When the user asks a question about the knowledge base. Searches wiki articles a
 - **Phase 3: For wikis with 100+ pages**, also search across all `.md` files for keywords related to the question — the index alone may miss relevant content.
 - **Phase 4: Read the most relevant wiki articles.** If wiki articles reference `raw/` sources and more detail is needed, read those too.
 - **Phase 5: Synthesize an answer** from the compiled knowledge. Cite the wiki pages you drew from: "Based on [[page-a]] and [[page-b]]..."
-- **Phase 6: File valuable answers back** — if the answer is a substantial comparison, deep dive, or novel synthesis, create a page in `queries/` or `comparisons/`. Don't file trivial lookups — only answers that would be painful to re-derive.
+- **Phase 6: File valuable answers back** — if the answer is a substantial comparison, deep dive, or novel synthesis, create a page at `wiki/queries/<domain>/<topic>/<query-slug>.md` or `wiki/comparisons/<domain>/<topic>/<comparison-slug>.md` (using the same three-level domain/topic structure). Don't file trivial lookups — only answers that would be painful to re-derive.
 - **Phase 7: Update `log.md`** with the query and whether it was filed.
     ```md
     ## [YYYY-MM-DD] Query | <question summary>
@@ -582,7 +613,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Scan all wiki articles for `[[wikilink]]` syntax that point to files that do not exist.
   - Report each finding as:
   ```
-  BROKEN LINK: [[wikilink]] in wiki/<sources|concepts>/<domain>/<topic>/<file>.md
+  BROKEN LINK: [[wikilink]] in wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md
   ```
 
 - **Phase 2: Legacy Markdown Links**
@@ -590,7 +621,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - These should be converted to Obsidian-style `[[link]]` syntax to match the PKBase standard.
   - Report each finding as:
   ```
-  LEGACY LINK: [text](path.md) in wiki/<sources|concepts>/<domain>/<topic>/<file>.md — convert to [[link]]
+  LEGACY LINK: [text](path.md) in wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md — convert to [[link]]
   ```
 
 - **Phase 3: Missing articles (concept frequency audit)**
@@ -610,8 +641,8 @@ When the user asks to run a health check on the wiki, run the checks below in or
     - summary files listed but absent
   - Report each finding as:
   ```
-  INDEX STALE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md exists but not in index
-  INDEX GHOST: wiki/<sources|concepts>/<domain>/<topic>/<file>.md listed in index but file missing
+  INDEX STALE: wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md exists but not in index
+  INDEX GHOST: wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md listed in index but file missing
   ```
 
 - **Phase 5: Source traceability (`frontmatter.sources`)**
@@ -619,8 +650,8 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Validate that each source path points to an existing file under `raw/`.
   - Report each finding as:
   ```
-  NO SOURCE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md has no source listed
-  MISSING SOURCE: wiki/<sources|concepts>/<domain>/<topic>/<file>.md references raw/<file>.md which does not exist
+  NO SOURCE: wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md has no source listed
+  MISSING SOURCE: wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md references raw/<file>.md which does not exist
   ```
 
 - **Phase 6: Summary completeness**
@@ -637,7 +668,7 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Parse `related:` entries in frontmatter and verify each referenced article exists.
   - Report each finding as:
   ```
-  STALE BACKLINK: wiki/<sources|concepts>/<domain>/<topic>/<file>.md links to a non-existent article
+  STALE BACKLINK: wiki/<sources|concepts|comparisons|queries>/<domain>/<topic>/<file>.md links to a non-existent article
   ```
 
 - **Phase 8: Optional integrity checks**
@@ -711,7 +742,7 @@ The wiki directory works as an Obsidian vault out of the box:
 - `[[wikilinks]]` render as clickable links
 - Graph View visualizes the knowledge network
 - YAML frontmatter powers Dataview queries
-- The `raw/assets/` folder holds images referenced via `![[image.png]]`
+- The `raw/assets/` tree holds images referenced via `![[image.png]]` (these resolve by file name, so the `<domain>/<topic>` nesting does not break them)
 
 For best results:
 - Set Obsidian's attachment folder to `raw/assets/`
