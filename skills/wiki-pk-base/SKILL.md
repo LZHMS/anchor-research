@@ -1,7 +1,7 @@
 ---
 name: wiki-pk-base
-description: "Build and maintain a personal knowledge base (PKBase) as interlinked markdown — an Obsidian-friendly vault. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files) into it, query/ask questions about it, or lint/audit/health-check it. Triggers on words like 'wiki', 'knowledge base', 'PKBase', 'ingest', 'add this source', 'my notes', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
-version: 1.0.0
+description: "Build and maintain a personal knowledge base (PKBase) as interlinked markdown — an Obsidian-friendly vault — plus a static web showcase (site/) rebuilt from the vault after every operation. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files) into it, query/ask questions about it, lint/audit/health-check it, or view/preview the wiki as a website. Triggers on words like 'wiki', 'knowledge base', 'PKBase', 'ingest', 'add this source', 'my notes', 'view my wiki', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
+version: 1.1.0
 author: Zhihao Li
 license: MIT
 metadata:
@@ -52,6 +52,7 @@ PKBase/                    # Personal Knowledge Base
 ├── SCHEMA.md              # Conventions, structure rules, taxonomy, extraction rules
 ├── index.md               # Sectioned content catalog with one-line summaries (the single master index)
 ├── log.md                 # Chronological action log (append-only, rotated to log-YYYY-N-MMfirsttoMMlast.md at 500 entries)
+├── site/                  # Static web showcase (copied from the skill's web-template at init; rebuilt by regenerating data.js)
 ├── raw/                   # Layer 1: Immutable source material (3-level: <material-type>/<domain>/<topic>/)
 │   ├── articles/<domain>/<topic>/   # Web articles, clippings, blog posts
 │   ├── papers/<domain>/<topic>/     # PDFs, arXiv papers (+ extracted .md alongside)
@@ -104,6 +105,31 @@ wiki/
 ```
 
 **Layer 3 — The Schema:** `SCHEMA.md` defines structure, conventions, and tag taxonomy.
+
+## Web Site (static showcase)
+
+`<PKBase>/site/` is a small self-contained static web site that displays the compiled wiki plus raw material status. It is a **build artifact of the vault**: the agent maintains it, never the user.
+
+- **Origin:** the skill ships a template in `web-template/` (next to this SKILL.md: `index.html`, `style.css`, `app.js`, `data.js`, `README.md`). At **init**, copy the whole folder into `<PKBase>/site/`.
+- **Rebuild rule:** every operation that changes vault state (`init`, `add`, `ingest`, `lint`, and any manual page/raw/log edit) finishes by **regenerating `site/data.js`** from the current vault. The other four files are stable template files — never hand-edit them inside a PKBase (if the skill's `web-template/` is updated, re-copy it and regenerate `data.js`).
+- **No build step:** the site is vanilla JS + CSS, readable by double-clicking `site/index.html` (`file://` works). Visual style: an academic-homepage look (fixed light navbar, white rounded cards on a light-gray page, blue links, publication-style list rows — see `web-template/README.md` for the full design spec). Lato + LXGW WenKai GB Screen fonts, Font Awesome icons, and KaTeX (for `$...$` / `$$...$$` formulas) load from CDNs (Google Fonts / jsDelivr / Cloudflare) and degrade gracefully offline.
+- **Bilingual UI (中文 / EN):** the site chrome (nav, section titles, stats, table headers, empty states, footer) is fully bilingual — toggle in the navbar (`.pk-lang`), persisted in `localStorage` (`pkbase_lang`), defaulting to the browser language. All UI strings live in the `I18N` dictionary at the top of `app.js` — **never hardcode Chinese/English text in view code**.
+- **Bilingual vault content:** when `SCHEMA.md` has `bilingual: true`, the same toggle also switches **content language**: entries in `data.js` that carry translation fields (`title_en`, `description_en`, `body_en`, …) are shown in the matching UI language, and entries without them fall back to the base-language text. Translation fields come from the sibling translation files (`<slug>.en.md` / `<slug>.zh.md`, see `## Conventions` in the SCHEMA.md template) — the site never translates on the fly. If `bilingual` is `false` (default), content is always displayed **as written**.
+- **Cache busting:** `index.html` loads local assets with `?v=` query strings (`data.js?v=<rebuild date>`, `app.js?v=<n>`, `style.css?v=<n>`) because browsers aggressively cache `file://` scripts. **Every rebuild must update the `data.js?v=` value** (use the rebuild date, e.g. `?v=20260819`) — otherwise users keep seeing the stale data. Bump the `app.js`/`style.css` versions when the template itself changes.
+- **What `data.js` contains** — full schema in the file header; in short, `window.PKBASE_DATA = { meta, counts, pages: { sources|concepts|comparisons|queries: [Page] }, raw: [RawEntry], log: [LogEntry] }`:
+  - `meta`: `name` / `description` from `SCHEMA.md`; `updated` = rebuild time
+  - `pages.<type>[].file`: path relative to `wiki/<type>/` (`<domain>/<topic>/<slug>.md`); `domain` / `topic` parsed from the first two path segments; `body` = page markdown **without frontmatter**, kept verbatim including `[[wikilinks]]` (full wiki-relative form `[[sources/<domain>/<topic>/<slug>|label]]`) and `$...$` formulas
+  - **Translation fields (only when `bilingual: true` in SCHEMA.md):** each entry may additionally carry `<field>_en` (or `<field>_zh`) sourced from the sibling translation file `<slug>.en.md`/`<slug>.zh.md` — Page: `title_en` / `description_en` / `body_en` (frontmatter + body, verbatim, same `[[wikilink]]`/`$...$` rules); `meta`: `name_en` / `description_en` (from `SCHEMA.md` `name_en:` / `description_en:` when provided); `raw[]`: `title_en` / `description_en` (optional annotation for the raw entry); `log[]`: `title_en` / `detail_en` (optional). Entries without the `_en` field show the original text in the EN view (graceful fallback) — never emit an empty translation field.
+  - `raw[]`: one entry per file under `raw/` (including binary assets), `file` relative to `raw/`
+  - `log[]`: recent entries from `log.md` + all `log-*.md`, newest first (last ~50)
+  - `counts`: lengths of the above arrays (sources / concepts / comparisons / queries / raw / log)
+- **Rebuild procedure:**
+  1. Scan `wiki/{sources,concepts,comparisons,queries}/<domain>/<topic>/*.md` → parse frontmatter (title, description, tags, updated, source) and body. **Translation merge (only when `bilingual: true` in SCHEMA.md):** for each base page, also scan for its sibling translation file `<slug>.en.md` (or `<slug>.zh.md` when `default_lang: en`) in the **same directory** — do NOT list translation files as separate pages. When present, parse it the same way and copy its `title` / `description` / body into the base entry's `title_en` / `description_en` / `body_en` (or the `*_zh` equivalents) of the **same** entry; when absent, omit the field (the web UI falls back to the base language). Also read `name_en:` / `description_en:` from `SCHEMA.md` into `meta` when present.
+  2. Scan `raw/` recursively → file list with material-type / domain / topic
+  3. Read `log.md` + `log-*.md` → recent entries
+  4. Write `site/data.js` (escape any `</script>` sequences inside strings as `<\/script>`), bump `meta.updated`
+  5. Bump the `data.js?v=` query string in `site/index.html` to the rebuild date (cache busting — see above)
+  6. Report "site rebuilt (N pages, M raw files)" in the operation's final report — do not add a separate log entry for the rebuild itself; it is part of the operation's report
 
 ## Raw Folder Organization (3-level, auto-classification)
 
@@ -165,6 +191,8 @@ PKBASE="${PKBASE_PATH:-$HOME/PKBase}"
 #   last ~30 lines of $PKBASE/log.md
 ```
 
+`site/` is a **build artifact** — no orientation read needed. Any state-changing operation you run will regenerate `site/data.js`; if `site/` is missing (pre-web-template PKBase), the next `lint` will report and repair it.
+
 Only after orientation should you ingest, query, or lint. This prevents:
 - Creating duplicate pages for entities that already exist
 - Missing cross-references to existing content
@@ -181,11 +209,13 @@ When the user asks to create or start a PKBASE:
 1. Determine the PKBASE path (from `$PKBASE_PATH` env var, or ask the user; default `~/PKBase`)
 2. Ask the user what domain and possible topics the PKBASE covers — be specific
 3. Ask the user for their preferred **Depth Level** (`100` / `300` / `500`). Briefly explain each level (see `## Depth Levels` in the SCHEMA.md template below). If they are unsure, default to `500` (Expert deep-dive)
+3b. Ask whether the PKBase should be **bilingual** (`bilingual: true` in SCHEMA.md, with `default_lang` set to the language the user will primarily write in — default `zh`). Explain: when enabled, each page can have an optional sibling translation file (`<slug>.en.md`) that the web site's language toggle loads; untranslated pages fall back to the base language. If they are unsure, default to `false`
 4. Create the directory structure above using provided domain and topics. If topics is not available, just create the domain structure
-5. Write `SCHEMA.md` customized to the domain, topics, and **depth level** (see template below)
+5. Write `SCHEMA.md` customized to the domain, topics, **depth level**, and **bilingual** setting (see template below)
 6. Write initial `index.md` with sectioned header
 7. Write initial `log.md` with creation entry
-8. Confirm the wiki is ready and suggest first sources to ingest
+8. **Create the web site:** copy the skill's `web-template/` folder (the one next to this SKILL.md) into `<PKBase>/site/`, then seed `site/data.js` from the fresh (empty) vault — `meta.name`/`meta.description` from `SCHEMA.md`, empty `pages`/`raw`/`log` arrays, zero `counts`. The site now exists and will be rebuilt by every subsequent state-changing operation (see `## Web Site (static showcase)`).
+9. Confirm the wiki is ready and suggest first sources to ingest (mention that `site/index.html` previews the knowledge base)
 
 ### SCHEMA.md Template
 
@@ -196,6 +226,8 @@ Adapt to the user's domain and topics. The schema constrains agent behavior and 
 
 ## Configuration
 - **depth_level**: <100|300|500>  <!-- Set during initialization: 100=Feynman, 300=College, 500=Expert -->
+- **default_lang**: <zh|en>  <!-- Primary language the base wiki files are written in. Default: zh -->
+- **bilingual**: <true|false>  <!-- When true, pages may carry a sibling translation file (<slug>.en.md when default_lang is zh, <slug>.zh.md when default_lang is en) that the web site loads on the matching language toggle. Default: false -->
 
 ## Domains & Topics
 [Define the scope of this knowledge base. List the primary domains and their sub-topics.]
@@ -217,6 +249,7 @@ Example:
 - Raw files always live three levels deep at `raw/<material-type>/<domain>/<topic>/` (never at the `raw/` root); new files are auto-classified — material type by extension/content, domain+topic matching the wiki location
 - **Formulas are always LaTeX, never code-style backticks.** Inline math: `$...$`; display math: `$$...$$`. Never wrap a formula in backticks (`` `...` ``) — that renders it as a monospace code span and Obsidian will not typeset it. Write `$x_{1:T} = [m_{\text{root},1:T};\, x_{\text{body},1:T}] \in \mathbb{R}^{T \times D}$`, not `` `x_{1:T} = [m_root; x_body]` ``. (ASCII diagrams stay in code fences — this rule is about math only.)
 - All relative paths — in frontmatter (`sources:`, `related:`) and in `[[wikilinks]]` — are resolved from the PKBase root (e.g., `wiki/concepts/agents/discovery/agent-discovery.md`). In Obsidian, set the vault to the PKBase root so these resolve natively.
+- **Bilingual pages (only when `bilingual: true`):** each base page `<slug>.md` (written in `default_lang`) MAY have a sibling translation file **in the same directory** named `<slug>.en.md` (when `default_lang: zh`) or `<slug>.zh.md` (when `default_lang: en`). The translation mirrors the base page's structure: same frontmatter fields (`title`, `description`) and the same body sections. The **base file is canonical** — it is the single source of truth for `index.md`, `log.md`, cross-references, and the primary language shown in Obsidian. Translations are **explicit files** written by the user or the agent on request — they are never auto-generated silently, and their `[[wikilinks]]`/`$...$` conventions must match the base page exactly. Translations are optional per page: a page with no translation simply falls back to its base language on the web toggle (see `## Web Site (static showcase)`).
 
 ## Page Thresholds
 - A concept gets its own page when it is (a) the central subject of a source, or (b) discussed substantively in 2+ sources. A single passing mention (footnote, aside) does NOT warrant a page — link to the nearest existing page instead.
@@ -424,7 +457,7 @@ The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it i
 ## [YYYY-MM-DD] create | Wiki initialized
 - Domains & Topics configured
 - Depth level: <100|300|500>
-- Structure created with SCHEMA.md, index.md, log.md
+- Structure created with SCHEMA.md, index.md, log.md, site/ (web showcase)
 
 ## [YYYY-MM-DD] ingest | [Source Title]
 - Domain: [domain] | Topic: [topic]
@@ -467,10 +500,13 @@ Process a single unprocessed raw file and compile it into wiki articles.
   - **Tags:** Use only tags defined in SCHEMA taxonomy. If a new tag is needed, add it to SCHEMA first with a short definition, then use it in articles.
   - **Media integration:** Embed extracted original media files (images, videos, etc., located in `raw/assets/<domain>/<topic>/`) into the source summary and concept wiki pages where they are contextually relevant. Use Obsidian-style media links (e.g., `![[filename.ext]]`) — these resolve by file name, so nesting does not break them.
   - **Summary:** Create the source summary at `wiki/sources/<domain>/<topic>/<source-slug>.md` at the configured depth level
+  - **Translation (only when `bilingual: true` in SCHEMA.md):** if the user requested a translation for this source, or the PKBase's working pattern includes it, also create/update the sibling translation file `<slug>.en.md` (or `<slug>.zh.md` when `default_lang: en`) next to every page created/updated above, mirroring its structure (same frontmatter fields + same body sections). Never auto-translate silently without the user's intent — when in doubt, skip the translation and mention it in the report. When the base page is later updated, its translation file must be updated to stay in sync (checked by `lint` → Phase 8).
 
 - **Phase 3: Update navigation**
   - Add new pages to `index.md` under the correct Domain and Topic section, alphabetically
   - Update the "Total pages" count and "Last updated" date in index header
+
+- **Site rebuild:** when `add` / `ingest` call this command, they rebuild `site/data.js` in their final phase (see `## Web Site (static showcase)`). If `process` is called **directly** (not via add/ingest), regenerate `site/data.js` before reporting — the site must never lag behind the vault.
 
 ### 2. Add
 
@@ -508,8 +544,10 @@ For each unprocessed raw source file, call the reusable `process` command to pro
     - Updated: <list of updated wiki articles>
     ```
 
-- **Phase 5: Report what changed**
-  - List every file created or updated to the user, including their full paths within the domain structure.
+- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (static showcase)` → Rebuild procedure).
+
+- **Phase 6: Report what changed**
+  - List every file created or updated to the user, including their full paths within the domain structure, plus the site rebuild line ("site rebuilt (N pages, M raw files)").
 
 A single source can trigger updates across 5-15 wiki pages. This is normal and desired — it's the compounding effect.
 
@@ -558,8 +596,10 @@ For each unprocessed raw file, call the reusable `process` command with that fil
       - ...
     ```
 
-- **Phase 5: Report what changed**
-  - List every file created or updated to the user, including their full paths within the domain structure.
+- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (static showcase)` → Rebuild procedure).
+
+- **Phase 6: Report what changed**
+  - List every file created or updated to the user, including their full paths within the domain structure, plus the site rebuild line ("site rebuilt (N pages, M raw files)").
 
 ### 4. Query
 
@@ -585,6 +625,7 @@ When the user asks a question about the knowledge base. Searches wiki articles a
     - Filed files:
       - <list of new or updated query/comparison files, if any>
     ```
+- **Phase 8: Rebuild the web site** — only if Phase 6 filed a page (vault state changed): regenerate `site/data.js` (see `## Web Site (static showcase)` → Rebuild procedure) and include the site rebuild line in the final answer.
 
 #### Tag-based search
 
@@ -674,14 +715,24 @@ When the user asks to run a health check on the wiki, run the checks below in or
 - **Phase 8: Optional integrity checks**
   - Tag audit: list tags in use and flag tags not declared in `SCHEMA.md` taxonomy.
   - Log rotation: if `log.md` exceeds 500 entries, rotate to `log-YYYY-N-MMfirsttoMMlast.md` (naming rule in the log.md template — never overwrite an existing rotated log).
+  - **Translation sync (only when `bilingual: true` in SCHEMA.md):** for every base wiki page that has a sibling translation file (`<slug>.en.md` / `<slug>.zh.md`), compare timestamps: if the base page's `updated` frontmatter (or file mtime) is newer than the translation file's, the translation is stale. Report each finding as:
+  ```
+  STALE TRANSLATION: wiki/<type>/<domain>/<topic>/<slug>.md is newer than its <slug>.en.md — re-translate to sync
+  ```
+  Pages without a translation file are NOT an issue (translation is optional per page) — but if the user expected full coverage, list the untranslated count as a summary line in the report.
 
-- **Phase 9: Lint report + logging**
+- **Phase 9: Web site sync check**
+  - If `site/` is missing entirely, report `MISSING SITE: run init's step 8 (copy web-template, seed data.js)` — do not recreate it silently.
+  - Compare `site/data.js` against the vault: page count per type vs. `wiki/<type>/**/*.md`, raw file count vs. `raw/` inventory, and `meta.updated`. If they diverge, report `STALE SITE: data.js has <n> pages but vault has <m>; regenerating`.
+  - **Rebuild the site** as the final step of lint (regenerate `site/data.js` per `## Web Site (static showcase)` → Rebuild procedure), even when the report has zero issues — lint is the designated repair point for a drifted site.
+
+- **Phase 10: Lint report + logging**
   - Group findings by severity priority:
     1. broken links / missing sources / stale backlinks
     2. index ghosts/stale entries
     3. missing articles
     4. legacy markdown links / style issues
-  - Include exact file paths and actionable fixes.
+  - Include exact file paths and actionable fixes, and end with the site rebuild line ("site rebuilt (N pages, M raw files)").
   - Append to `log.md`:
   ```md
   ## [YYYY-MM-DD] lint | N issues found
@@ -692,6 +743,8 @@ When the user asks to run a health check on the wiki, run the checks below in or
   - Source traceability issues: <count>
   - Summary completeness issues: <count>
   - Stale backlinks: <count>
+  - Stale translations: <count>   <!-- only when bilingual: true; omit the line otherwise -->
+  - Site: <rebuilt|stale-rebuilt|missing>
   ```
 
 #### Suggestions
@@ -715,6 +768,7 @@ After reporting, ask the user if they want to auto-fix:
 - Add missing articles to the index
 - Remove ghost entries from the index
 - Update the article count and date in the index
+- Regenerate `site/data.js` (already done in Phase 9; confirm the preview at `site/index.html`)
 
 ## Working with the Wiki
 
@@ -754,6 +808,8 @@ same directory as the wiki path.
 
 ## Pitfalls
 
+- **Never forget to rebuild the site** — every operation that changes vault state (`init`, `add`, `ingest`, a filed `query`, `lint`, or any direct page/raw/log edit) ends by regenerating `site/data.js`. A site that lags behind the vault is a stale artifact; `lint` detects and repairs this.
+- **Never hand-edit `site/` files except `data.js`** — `index.html` / `style.css` / `app.js` / `README.md` come verbatim from the skill's `web-template/`; if they need to change, update the template and re-copy.
 - **Never modify files in `raw/`** — sources are immutable. Corrections go in wiki pages.
 - **Stage by copying, never by moving** — when ingesting from an external folder, the user's originals stay where they are; `raw/` receives copies. Never overwrite an existing `raw/` file (rename with `-2`, `-3`, …).
 - **Always orient first** — read SCHEMA + index + recent log before any operation in a new session.
@@ -767,6 +823,8 @@ same directory as the wiki path.
 - **Frontmatter is required** — it enables search, filtering, and staleness detection.
 - **Tags must come from the taxonomy** — freeform tags decay into noise. Add new tags to SCHEMA.md
   first, then use them.
+- **Translation files are siblings, never a separate tree** — a bilingual page's translation lives at `wiki/<type>/<domain>/<topic>/<slug>.en.md`, next to its base file. Never rename the base file, never nest translations in a separate folder, and never list them in `index.md` (the base page is the only indexed entry). The rebuild merges them into the **same** `data.js` entry (`title_en`/`description_en`/`body_en`) — if a rebuild emits a translation as its own page, the site will show duplicate entries.
+- **Never translate silently** — translation files are explicit. Only create or update `<slug>.en.md` when the user asked for it (or the PKBase convention says to); base pages always stay in `default_lang`.
 - **Keep pages scannable** — a wiki page should be readable in 30 seconds. Split pages over
   200 lines. Move detailed analysis to dedicated deep-dive pages.
 - **Ask before mass-updating** — if an ingest would touch 10+ existing pages, confirm

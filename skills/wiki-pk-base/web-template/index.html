@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PKBase · 知识库</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-web/lxgwwenkaigbscreen/result.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+<nav class="pk-navbar">
+  <div class="pk-container">
+    <a class="pk-brand" href="#/" data-go="#/">PKBase</a>
+    <div class="pk-nav" id="pk-nav">
+      <a href="#/" data-go="#/" data-nav="home">总览</a>
+      <a href="#/wiki" data-go="#/wiki" data-nav="wiki">知识 Wiki</a>
+      <a href="#/raw" data-go="#/raw" data-nav="raw">原始材料</a>
+      <a href="#/log" data-go="#/log" data-nav="log">操作日志</a>
+      <span class="pk-lang">
+        <a href="#" data-lang="zh" class="active">中文</a>
+        <a href="#" data-lang="en">EN</a>
+      </span>
+    </div>
+  </div>
+</nav>
+
+<main class="pk-container" id="app">
+  <div class="empty-state big">正在加载 PKBASE_DATA …</div>
+</main>
+
+<!-- data.js is regenerated on every rebuild; bump ?v= (rebuild date) to bust the browser cache -->
+<script src="data.js?v=20260819"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<!-- bump ?v= whenever app.js / style.css / data.js schema changes, to bust the browser cache -->
+<script defer src="app.js?v=4"></script>
+</body>
+</html>
