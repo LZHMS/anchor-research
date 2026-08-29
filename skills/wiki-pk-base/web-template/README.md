@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `index.html` | 页面骨架：加载 Lato、LXGW WenKai GB Screen 字体、Font Awesome 图标、KaTeX（公式）、`style.css`、`data.js`、`app.js` | ❌ 不变 |
 | `style.css` | academic-homepage 学术主页风格（参考 https://huai-chang.github.io/ ）：浅灰底 `#f8f9fa`、白色圆角卡片、固定顶栏导航、蓝色链接、出版卡片式列表 | ❌ 不变 |
-| `app.js` | 零依赖渲染器：hash 路由（总览 / Wiki / 原始材料 / 日志 / 单页阅读器）、全文搜索、mini markdown（含 `[[wikilink]]` 与 `$...$` 公式） | ❌ 不变 |
+| `app.js` | 零依赖渲染器：hash 路由（总览 / Wiki / Wiki 单类型全量 `#/wiki/<type>` / 原始材料 / 日志 / 单页阅读器）、全文搜索、mini markdown（含 `[[wikilink]]`、`![[embed]]` 图片与 `$...$` 公式） | ❌ 不变 |
 | `data.js` | **数据层**：`window.PKBASE_DATA`，由技能从 vault 状态生成 | ✅ 每次重建覆盖 |
 | `README.md` | 本文件 | ❌ 不变 |
 
@@ -33,6 +33,18 @@
 - **永不即时翻译**：站点从不自己翻译内容；`_en` 字段只来自显式的翻译文件。
 - **搜索**：全文搜索的 haystack 同时包含原文与 `_en` 字段，英文也能搜到中文标题的页面（反之亦然）。
 - **缓存**：`index.html` 里 `data.js?v=` / `app.js?v=` / `style.css?v=` 的版本戳必须随重建/改模板递增，否则浏览器会用 file:// 缓存的旧脚本。
+
+## Wiki 页布局（v5 起）
+
+`#/wiki` 不再按类型纵向铺开全部页面，改为**短页 + 并排栏目**，避免页面过长：
+
+- **每日论文看看**：独立栏目（图标 `fa-newspaper`）。识别规则：页面 slug 形如 `daily-YYYY-MM-DD-*`，或 tags 含 `daily*`（如 `daily-ideas`）。最多显示最近 3 篇；这类页面**不再**出现在查询记录栏目里。没有每日页面时显示空态文案。
+- **四类页面并排卡片**（来源页 / 概念页 / 对比页 / 查询记录）：`.wiki-cols` 两列网格（≤900px 单列），每个类型一张紧凑卡片（`.col-card` + `.pub-list.compact`），**只显示按 `updated` 降序的最近 5 篇**。
+- **全量列表**：每张卡片右上角「查看全部 N 项 →」链接到 `#/wiki/<type>`（`viewWikiAll`），保留旧的 领域→主题 分组长列表，带「返回 Wiki」。领域筛选（`state.wikiDomain`）对栏目卡片与全量视图同样生效。
+
+## 原始材料页布局（与 Wiki 页一致）
+
+`#/raw` 同样**不再纵向铺开全部文件**：按材料类型（论文 / 文章 / 转录 / 素材 / 其他）并排成 `.wiki-cols` 栏目卡，每栏只按文件名 `YYYYMMDD-` 日期前缀降序显示**最近 5 个**（紧凑行，文件名新标签打开原始文件）；「查看全部 N 项 →」链接到 `#/raw/<type>`（`viewRawAll`）查看该类型的完整表格，带「返回原始材料」。
 
 ## data.js 约定（重建时必须遵守）
 

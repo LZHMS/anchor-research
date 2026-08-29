@@ -1,7 +1,7 @@
 ---
 name: wiki-pk-base
 description: "Build and maintain a personal knowledge base (PKBase) as interlinked markdown — an Obsidian-friendly vault — plus a static web showcase (site/) rebuilt from the vault after every operation. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files) into it, query/ask questions about it, lint/audit/health-check it, or view/preview the wiki as a website. Triggers on words like 'wiki', 'knowledge base', 'PKBase', 'ingest', 'add this source', 'my notes', 'view my wiki', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
-version: 1.1.0
+version: 1.2.0
 author: Zhihao Li
 license: MIT
 metadata:

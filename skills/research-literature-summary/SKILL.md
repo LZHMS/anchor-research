@@ -1,10 +1,14 @@
 ---
 name: research-literature-summary
-description: "Provides a deep summary of the collected literature review JSON: it summarizes the overall research landscape and performs a detailed analysis of each paper. It directly invokes Python scripts to execute the analysis, supporting third-party OpenAI-compatible models. Use when the user asks to 'summarize literature', 'analyze papers', 'literature summary', or needs a systematic overview of `research_foundation_review.json`."
-version: 1.1.0
+description: "Provides a deep summary of the collected literature review JSON: it summarizes the overall research landscape and performs a detailed analysis of each paper. It directly invokes Python scripts to execute the analysis, supporting third-party OpenAI-compatible models (Ollama fallback). Writes draft summaries into the run's artifacts folder and can file the results into a PKBase (comparison page + source pages). Use when the user asks to 'summarize literature', 'analyze papers', 'literature summary', or needs a systematic overview of `research_foundation_review.json`."
+version: 1.2.0
 author: Zhihao Li
 license: MIT
+argument-hint: "input: artifacts/<DATE>-<topic-slug>/research_foundation_review.json | llm: <OpenAI-compatible endpoint>"
 metadata:
+  tags: [research, literature-review, summary, analysis, zotero, pkbase]
+  category: research
+  related_skills: [research-literature-review, research-daily-ideas, wiki-pk-base]
   hermes:
     tags: [Research, Literature, Summary, Analysis]
 ---
@@ -13,15 +17,25 @@ metadata:
 
 Input literature review file: `$ARGUMENTS`
 
+(If empty, use the newest `artifacts/*/research_foundation_review.json` under the project
+root; if none exists, ask the user.)
+
 ## Constants
 
-- **INPUT_JSON** - Path to the input literature review JSON file, defaults to `artifacts/research_foundation_review.json`
-- **OBSIDIAN_ROOT** - Path to the Obsidian `ResearchPapers` directory (should be provided or configured).
-- **TOPIC_DIR** - Sub-directory within Obsidian based on the research direction: `{OBSIDIAN_ROOT}/{review_topic}/`
-- **SUMMARY_OUTPUT** - Overview summary output file: `{TOPIC_DIR}/overview_summary.md`
-- **PER_PAPER_DIR** - Single paper analysis directory: `{TOPIC_DIR}/papers/`
-- **AGGREGATED_OUTPUT** - Aggregated analysis index: `{TOPIC_DIR}/all_papers_analysis.md`
-- **SCRIPT_PATH** - The execution script: `research-literature-summary/summarize_review.py`
+- **INPUT_JSON** - Path to the input literature review JSON (produced by the
+  `research-literature-review` skill). Default: the newest
+  `artifacts/<DATE>-<topic-slug>/research_foundation_review.json` under the **project root**
+  (the directory containing `skills/`).
+- **RUN_DIR** - The folder containing `INPUT_JSON`; all generated files for this run live
+  under `{RUN_DIR}/summary/` (portable, next to the data — never written into the skill
+  folder).
+- **VAULT_ROOT** - The user's Obsidian vault (`$OBSIDIAN_VAULT_PATH` or the known location).
+  If it is a PKBase (a `SCHEMA.md` at the vault root), Step 4 can file results into it.
+- **SUMMARY_OUTPUT** - Overview summary output file: `{RUN_DIR}/summary/overview_summary.md`
+- **PER_PAPER_DIR** - Single paper analysis directory: `{RUN_DIR}/summary/papers/`
+- **AGGREGATED_OUTPUT** - Aggregated analysis index: `{RUN_DIR}/summary/all_papers_analysis.md`
+- **SCRIPT_PATH** - The execution script: `{RUN_DIR}/summarize_review.py` — written into the
+  run directory on first use (see Step 1)
 
 ## Goal
 
@@ -35,11 +49,12 @@ Perform a two-stage automated analysis on the collected literature review JSON f
    - **Methodology Lineages**: A taxonomy of existing method families/schools, explicitly explaining *how* their core mechanisms work.
    - **Evaluation Metrics**: A descriptive list of existing evaluation metrics, including brief explanations and their underlying mathematical formulas where applicable.
    - **Open Research Gaps**: Highlighted unresolved issues and potential future research directions.
-2. **Per-Paper Analysis**: Process each paper using a Python script that automatically invokes LLM APIs. The script uses a comprehensive Markdown template to extract paper attributes seamlessly in English.
+2. **Per-Paper Analysis**: Process each paper using a Python script that automatically invokes LLM APIs. The script uses a comprehensive Markdown template to extract paper attributes in fluent Chinese (paper titles, venues, and figure captions stay in the original language).
 
 ## Input
 
-- **Required**: Literature review JSON file path (defaults to `artifacts/research_foundation_review.json`)
+- **Required**: Literature review JSON file path (defaults to the newest run's
+  `research_foundation_review.json` — see `INPUT_JSON`)
 - **Optional**: LLM configuration context (Model endpoint, API key, Model name)
 
 ## LLM Configuration
@@ -59,21 +74,37 @@ If omitted, the script should fallback to standard local Ollama settings (`http:
 
 ### Step 1: Script Preparation
 
-The agent MUST check if `research-literature-summary/summarize_review.py` exists. If it does not exist, the agent MUST write it.
+The agent MUST check if `{RUN_DIR}/summarize_review.py` exists (a previous run of the same
+topic may have left one). If it does not exist, the agent MUST write it into `RUN_DIR`.
 The script MUST:
 1. Parse the input `INPUT_JSON`.
-2. Extract the `review_summary` and call the LLM to generate an overall Markdown report (`SUMMARY_OUTPUT`).
-3. For individual papers, the script contains the strictly defined Markdown template to ensure exact standard consistency and output structure.
-4. The script MUST extract the arXiv ID (where available) and download the full LaTeX source text for analysis. If available, feed the extracted source text, alongside the paper's title, abstract, and `review_summary` metadata to the LLM. Instruct the LLM to extract full narrative properties (in English) as well as any key `task_figure` and `methodology` properties.
-5. Save individual LLM Markdown responses to `{PER_PAPER_DIR}/{paper_id}.md` and output an aggregated `{AGGREGATED_OUTPUT}`.
+2. Extract the `review_summary` and call the LLM to generate an overall Markdown report
+   (`SUMMARY_OUTPUT`) — narrative in fluent Chinese.
+3. For individual papers, the script contains the strictly defined Markdown template to
+   ensure exact standard consistency and output structure.
+4. **Source text, in this order:** (a) a local `pdf_path` (PKBase `raw/` / Zotero
+   attachment) — extract the text locally (pypdf/PyMuPDF); (b) an arXiv ID — reuse the
+   `research-daily-ideas` skill's downloader
+   (`skills/research-daily-ideas/scripts/download_paper_sources.py`, handles rate limiting,
+   retries, and figure rasterization); (c) neither — abstract only (mark the analysis
+   `abstract-only`). Feed the source text plus the title, abstract, `relevance`, and
+   `review_summary` metadata to the LLM; also include the user's own
+   `source_metadata.zotero` annotations/notes when present — they are high-signal.
+   Instruct the LLM to extract full narrative properties (in fluent Chinese; titles,
+   venues, and figure captions stay in the original language) plus key `task_figure` and
+   `methodology` properties.
+5. When a record has `pkbase_page` set, read that existing PKBase source page first — ground
+   the analysis in it and cross-link, never duplicate it.
+6. Save individual LLM Markdown responses to `{PER_PAPER_DIR}/{paper_id}.md` and output an
+   aggregated `{AGGREGATED_OUTPUT}` (plus a statistical `aggregate_report.md`: counts by
+   role/year/venue, quality distribution).
 
 ### Step 2: Automated Execution
 
 Instead of manually generating prompts inside the chat UI, **the agent MUST run the Python automation script in the terminal**:
 
 ```bash
-# Agent should find out the correct Obsidian Vault path from settings or prompt the user if unclear
-python research-literature-summary/summarize_review.py --input artifacts/research_foundation_review.json --obsidian-dir <path-to-obsidian>/ResearchPapers
+python {RUN_DIR}/summarize_review.py --input <INPUT_JSON> --out {RUN_DIR}/summary
 ```
 
 - Pass any user-provided configurations (like custom base URLs or models) via CLI arguments or environment variables.
@@ -84,14 +115,45 @@ python research-literature-summary/summarize_review.py --input artifacts/researc
 Once the terminal script completes successfully:
 1. Briefly state that the automated analysis is complete and list the number of analyzed papers.
 2. Provide a short excerpt or highlight from `overview_summary.md`.
-3. Inform the user that the outputs were written directly to Obsidian under `ResearchPapers/{review_topic}/`.
-4. Suggest next actionable steps for the user (e.g., advancing to `paper-plan` or `research-refine`).
+3. Inform the user where the drafts were written (`{RUN_DIR}/summary/`). If the user wants
+   them inside a classic (non-PKBase) Obsidian vault, copy the folder to
+   `{VAULT_ROOT}/ResearchPapers/{review_topic}/` (legacy layout).
+4. Suggest next actionable steps for the user: filing into the PKBase (Step 4), or
+   advancing to `research-refine` / a `research-paper-*` skill.
+
+### Step 4: File the results into PKBase (optional — explicit user request)
+
+When the vault is a PKBase (see `VAULT_ROOT`) and the user asks to file the results:
+
+1. **Classify:** pick the domain/topic per the PKBase's `SCHEMA.md` (closest existing one;
+   register a genuinely new one in SCHEMA first).
+2. **Landscape → comparison page:** look for the topic's comparison page already created by
+   the `research-literature-review` skill's Step 4 (under
+   `wiki/comparisons/<domain>/<topic>/`). If it exists, **extend** it with the deeper
+   landscape (method families, metrics with formulas, open gaps) and bump `updated`; if
+   not, create `wiki/comparisons/<domain>/<topic>/<topic-slug>-landscape-<DATE>.md` per the
+   `wiki-pk-base` comparison-page conventions (frontmatter `sources:`/`created`/`tags` —
+   taxonomy tags only, ≥2 `[[wikilinks]]`).
+3. **Per-paper → source pages (selected, not all):** ask which papers to file — default
+   suggestion: the highest-relevance ones and/or those with a local `pdf_path`. Each filing
+   follows the `wiki-pk-base` `add` flow: stage the PDF into
+   `raw/papers/<domain>/<topic>/` (copy, never move; `YYYYMMDD-arxiv-<id>.pdf` naming),
+   write the generated analysis as the source summary at
+   `wiki/sources/<domain>/<topic>/<paper-slug>.md` (SCHEMA depth level, ASCII diagram
+   required, `![[figure]]` embeds for rasterized figures), and extract 2-5 concept pages per
+   the SCHEMA thresholds. If this would touch 10+ existing pages, confirm scope first.
+4. **Navigation + site:** update `index.md`, append to `log.md`
+   (`## [<DATE>] ingest | Literature summary: <review_topic>` with the page list), and
+   rebuild the site (prefer `site/rebuild_site.py` when present; otherwise regenerate
+   `site/data.js` per the `wiki-pk-base` procedure). Report `site rebuilt (N pages,
+   M raw files)`.
 
 ## Output Files
 
 | File | Content |
 |------|---------|
-| `{TOPIC_DIR}/overview_summary.md` | Overall research landscape summary (Markdown detailing facets, subfields, questions, datasets, methods, and metric formulas) |
-| `{TOPIC_DIR}/papers/{paper_id}.md` | Deep analysis for single papers (Markdown) |
-| `{TOPIC_DIR}/all_papers_analysis.md` | Aggregated Markdown index of all paper analyses |
-| `{TOPIC_DIR}/aggregate_report.md` | Generated statistical report on paper qualities, domains, and trends |
+| `{RUN_DIR}/summary/overview_summary.md` | Overall research landscape summary (Markdown detailing facets, subfields, questions, datasets, methods, and metric formulas) |
+| `{RUN_DIR}/summary/papers/{paper_id}.md` | Deep analysis for single papers (Markdown) |
+| `{RUN_DIR}/summary/all_papers_analysis.md` | Aggregated Markdown index of all paper analyses |
+| `{RUN_DIR}/summary/aggregate_report.md` | Generated statistical report on paper qualities, domains, and trends |
+| (filing mode) `wiki/comparisons/...`, `wiki/sources/...` | Durable PKBase pages per Step 4 |

@@ -44,13 +44,22 @@
       'wiki.domain': '当前领域：',
       'wiki.clear': '清除筛选',
       'wiki.empty': '知识库还没有编译出 wiki 页面<br>对原始材料执行 ingest 后，这里会出现内容',
+      'wiki.viewAll': '查看全部 {n} 项 →',
+      'wiki.back': '返回 Wiki',
+      'wiki.recent': '最近 {n} 篇',
+      'daily.title': '每日论文看看',
+      'daily.empty': '还没有每日论文栏目<br>对当日新论文执行一次 query 后，这里会出现内容',
       'raw.title': '原始材料',
       'raw.desc': 'raw/ 目录清单 — 按 材料类型 / 领域 / 主题 三级组织，点击文件名可打开原始文件。',
       'raw.empty': 'raw/ 目录还是空的<br>用 add 捕获素材，用 ingest 编译成 wiki',
       'raw.col.file': '文件', 'raw.col.domain': '领域', 'raw.col.topic': '主题', 'raw.col.desc': '说明',
+      'raw.back': '返回原始材料', 'raw.recent': '最近 {n} 个',
       'log.title': '操作日志',
       'log.desc': 'log.md 时间线 — 最近的操作记录（add / ingest / query / lint …）。',
       'log.empty': '还没有操作记录',
+      'log.viewAll': '查看全部 {n} 条 →',
+      'log.back': '返回操作日志',
+      'log.recent': '最近 {n} 条',
       'article.updated': '更新于',
       'article.back': '返回 Wiki 列表',
       'notfound.title': '页面不存在',
@@ -78,13 +87,22 @@
       'wiki.domain': 'Domain:',
       'wiki.clear': 'Clear filter',
       'wiki.empty': 'No wiki pages compiled yet.<br>Run ingest on raw material to populate this view.',
+      'wiki.viewAll': 'View all {n} →',
+      'wiki.back': 'Back to Wiki',
+      'wiki.recent': 'latest {n}',
+      'daily.title': 'Daily Papers',
+      'daily.empty': 'No daily papers yet.<br>Run a daily-paper query to populate this section.',
       'raw.title': 'Raw Material',
       'raw.desc': 'Inventory of raw/ — organized by material type / domain / topic; click a file name to open the original.',
       'raw.empty': 'raw/ is still empty.<br>Use add to capture material, ingest to compile it into the wiki.',
       'raw.col.file': 'File', 'raw.col.domain': 'Domain', 'raw.col.topic': 'Topic', 'raw.col.desc': 'Notes',
+      'raw.back': 'Back to Raw', 'raw.recent': 'latest {n}',
       'log.title': 'Operation Log',
       'log.desc': 'log.md timeline — recent operations (add / ingest / query / lint …).',
       'log.empty': 'No log entries yet',
+      'log.viewAll': 'View all {n} →',
+      'log.back': 'Back to Log',
+      'log.recent': 'latest {n}',
       'article.updated': 'Updated',
       'article.back': 'Back to Wiki',
       'notfound.title': 'Page not found',
@@ -124,6 +142,20 @@
   /* ---------------- state ---------------- */
 
   var DATA = window.PKBASE_DATA || null;
+
+  /* Obsidian embed support: wiki bodies use ![[filename]] embeds (resolved
+     by filename across the vault in Obsidian). Map each vault asset filename
+     to its raw/ path from the data.js raw inventory so the same pages render
+     inline images in the browser too (files live under ../raw relative to
+     site/). */
+  var ASSET_BY_NAME = {};
+  (function () {
+    if (!DATA) return;
+    (DATA.raw || []).forEach(function (r) {
+      var name = (r.file || '').split('/').pop();
+      if (name && !ASSET_BY_NAME[name]) ASSET_BY_NAME[name] = r.file;
+    });
+  })();
   var app = document.getElementById('app');
   var navEl = document.getElementById('pk-nav');
   var state = { wikiDomain: null };
@@ -138,7 +170,7 @@
   var TYPE_ICON = { sources: 'fa-file-lines', concepts: 'fa-lightbulb', comparisons: 'fa-scale-balanced', queries: 'fa-magnifying-glass' };
   var RAW_ORDER = ['papers', 'articles', 'transcripts', 'assets', 'misc'];
   var RAW_ICON = { papers: 'fa-file-pdf', articles: 'fa-newspaper', transcripts: 'fa-wave-square', assets: 'fa-image', misc: 'fa-file' };
-  var ACT_ICON = { add: 'fa-plus', ingest: 'fa-file-import', query: 'fa-magnifying-glass', lint: 'fa-stethoscope', create: 'fa-seedling', update: 'fa-pen', archive: 'fa-box-archive', delete: 'fa-trash' };
+  var ACT_ICON = { add: 'fa-plus', ingest: 'fa-file-import', query: 'fa-magnifying-glass', lint: 'fa-stethoscope', create: 'fa-seedling', update: 'fa-pen', fix: 'fa-wrench', archive: 'fa-box-archive', delete: 'fa-trash' };
 
   function rawSortKey(mt) {
     var i = RAW_ORDER.indexOf(mt);
@@ -156,12 +188,15 @@
   function go(hash) { location.hash = hash; }
 
   function findPage(path) {
-    var p0 = String(path || '').replace(/\.md$/, '').trim();
+    // tolerate a trailing backslash (table-escaped '\|' separator leaking in)
+    var p0 = String(path || '').replace(/\.md$/, '').replace(/\\$/, '').trim();
     for (var i = 0; i < TYPE_ORDER.length; i++) {
       var list = DATA.pages[TYPE_ORDER[i]] || [];
-      // accept both "<type>/<domain>/<topic>/<slug>" (wikilink form)
+      // accept "<type>/<domain>/<topic>/<slug>" (wikilink form),
+      // "wiki/<type>/..." (PKBase-root form used in vault bodies)
       // and "<domain>/<topic>/<slug>" (route/file form)
       var rel = p0;
+      if (rel.indexOf('wiki/') === 0) rel = rel.slice(5);
       if (rel.indexOf(TYPE_ORDER[i] + '/') === 0) rel = rel.slice(TYPE_ORDER[i].length + 1);
       for (var j = 0; j < list.length; j++) {
         if (list[j].file === rel || list[j].file.replace(/\.md$/, '') === rel) {
@@ -212,7 +247,21 @@
   /* ---------------- tiny markdown renderer ---------------- */
 
   function splitRow(row) {
-    return row.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (s) { return s.trim(); });
+    // stash [[path|label]] wikilinks first: the '|' inside them (plain, or
+    // escaped as '\|' inside table cells) must not split the row; the
+    // escape backslash is dropped
+    var stashed = [];
+    row = row.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, function (_, p, l) {
+      stashed.push('[[' + p.trim().replace(/\\$/, '') + '|' + l.trim() + ']]');
+      return '\u0003' + (stashed.length - 1) + '\u0003';
+    });
+    // any remaining escaped pipes are literal '|' characters in cell text
+    row = row.replace(/\\\|/g, '\u0004');
+    return row.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (s) {
+      return s.trim()
+        .replace(/\u0003(\d+)\u0003/g, function (_, n) { return stashed[+n]; })
+        .replace(/\u0004/g, '|');
+    });
   }
 
   function inline(s) {
@@ -229,13 +278,30 @@
       codeSpans.push('<code>' + c + '</code>');
       return '\u0001' + (codeSpans.length - 1) + '\u0001';
     });
+    // Obsidian embed ![[name.png]] / ![[name.png|alt]] → raw/ asset image
+    s = s.replace(/!\[\[([^\]]+)\]\]/g, function (_, name) {
+      var n = name.split('|')[0].trim();
+      var f = ASSET_BY_NAME[n];
+      if (f) return '<img src="../raw/' + f + '" alt="' + n + '" loading="lazy">';
+      return '<span class="embed-missing" title="Asset not found in raw/: ' + n + '"><i class="fa-solid fa-image-slash"></i> ' + n + '</span>';
+    });
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, function (_, alt, url) {
       return '<img src="' + url + '" alt="' + alt + '">';
     });
-    // [[path|label]] / [[path]]  →  clickable wikilink (resolved by click handler)
+    // [[path|label]] / [[path]]  →  clickable wikilink (resolved by click handler).
+    // Without an explicit alias the visible text is the target page's title
+    // (looked up in data.js), not the raw path.
     s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, function (_, path, label) {
-      var p = path.trim().replace(/\.md$/, '');
-      var l = (label || path).trim().replace(/\.md$/, '');
+      // a trailing backslash is the table-escape of the '|' separator — drop it
+      var p = path.trim().replace(/\\$/, '').replace(/\.md$/, '');
+      var l;
+      if (label) {
+        l = label.trim().replace(/\.md$/, ''); // already HTML-escaped by the earlier esc(s)
+      } else {
+        var f = findPage(p);
+        var title = f ? L(f.page, 'title') : '';
+        l = title ? esc(title) : p; // title is raw data → escape; p is pre-escaped
+      }
       return '<a class="wikilink" data-wiki="' + esc(p) + '">' + l + '</a>';
     });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)/g, function (_, tt, u) {
@@ -277,6 +343,16 @@
 
     src = src.replace(/```[^\n]*\n([\s\S]*?)(?:```|$)/g, function (_, code) {
       return put('<pre><code>' + esc(code.replace(/\n$/, '')) + '</code></pre>');
+    });
+    // autolink bare URLs: "项目主页：https://…" → clickable. Code fences and
+    // (below) display math are stashed already; URLs inside [text](url) /
+    // ![alt](url) are skipped by the guard characters; trailing sentence
+    // punctuation stays outside the link
+    src = src.replace(/(^|[^(\[>"'=])(https?:\/\/[^\s<>()\[\]]+)/g, function (_, pre, url) {
+      var m2 = url.match(/^(.*?)[.,;:!?]+$/);
+      var clean = m2 ? m2[1] : url;
+      var tail = m2 ? url.slice(clean.length) : '';
+      return pre + '[' + clean + '](' + clean + ')' + tail;
     });
     // stash raw TeX in a data attribute; KaTeX fills the block in renderMath()
     var displayMath = [];
@@ -402,13 +478,14 @@
     return TYPE_SINGULAR[type] || type;
   }
 
-  function pubItem(type, p) {
+  function pubItem(type, p, hidden) {
     var title = L(p, 'title'), desc = L(p, 'description');
     var meta = '<span class="pk-badge b-' + typeClass(type) + '">' + t('type.' + typeClass(type)) + '</span>' +
       (p.domain ? '<i class="fa-solid fa-diagram-project"></i> ' + esc(p.domain) : '') +
       (p.topic ? '<i class="fa-solid fa-folder"></i> ' + esc(p.topic) : '') +
       (p.updated ? '<i class="fa-regular fa-calendar"></i> ' + esc(p.updated) : '');
-    return '<div class="pub-item" data-go="#/page/' + type + '/' + encodeURIComponent(p.file) + '">' +
+    return '<div class="pub-item"' + (hidden ? ' style="display:none"' : '') +
+      ' data-go="#/page/' + type + '/' + encodeURIComponent(p.file) + '">' +
       '<div class="pub-cover cov-' + typeClass(type) + '"><i class="fa-solid ' + TYPE_ICON[type] + '"></i></div>' +
       '<div class="pub-body"><div class="pub-title">' + esc(title) + '</div>' +
       (desc ? '<div class="pub-desc">' + esc(desc) + '</div>' : '') +
@@ -425,15 +502,19 @@
     setPageTitle('');
     if (navEl) navEl.parentNode.querySelector('.pk-brand').textContent = name;
 
-    var html = '<div class="pk-card pad-lg">';
+    // header card: name / description / stats on the left, search on the right;
+    // search results render full-width below the card
+    var html = '<div class="pk-card pad-lg profile-card">';
+    html += '<div class="profile-main">';
     html += '<h2 class="profile-name">' + esc(name) + '</h2>';
     if (desc) html += '<div class="profile-desc">' + esc(desc) + '</div>';
     html += '<hr>' + statRow(DATA.counts);
-    html += '<hr>';
-    html += '<div class="section-title" style="margin-top:0"><i class="fa-solid fa-magnifying-glass"></i> ' + t('search.title') + '</div>';
-    html += '<input class="pk-search" id="pk-search" type="text" placeholder="' + esc(t('search.placeholder')) + '" autocomplete="off">';
-    html += '<div id="pk-search-results" style="margin-top:1rem"></div>';
     html += '</div>';
+    html += '<div class="profile-search">';
+    html += '<div class="search-label"><i class="fa-solid fa-magnifying-glass"></i> ' + t('search.title') + '</div>';
+    html += '<input class="pk-search" id="pk-search" type="text" placeholder="' + esc(t('search.placeholder')) + '" autocomplete="off">';
+    html += '</div></div>';
+    html += '<div id="pk-search-results"></div>';
 
     // domains grid
     var domains = {};
@@ -518,10 +599,38 @@
     box.innerHTML = html;
   }
 
-  function viewWiki() {
-    renderNav('wiki');
-    setPageTitle(t('nav.wiki'));
+  /* daily-paper pages: slug "daily-YYYY-MM-DD-*" or a "daily*" tag —
+     they get their own section on the wiki page instead of the type column */
+  function isDaily(p) {
+    var slug = String(p.file || '').split('/').pop().replace(/\.md$/, '');
+    if (/^daily-\d{4}-\d{2}-\d{2}/.test(slug)) return true;
+    return (p.tags || []).some(function (tg) { return /^daily/.test(tg); });
+  }
 
+  function sortPagesDesc(pages) {
+    return pages.slice().sort(function (a, b) {
+      var da = a.updated || '', db = b.updated || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return String(a.file).localeCompare(String(b.file));
+    });
+  }
+
+  function allDailyPages() {
+    var out = [];
+    TYPE_ORDER.forEach(function (type) {
+      (DATA.pages[type] || []).forEach(function (p) {
+        if (isDaily(p)) out.push({ type: type, p: p });
+      });
+    });
+    out.sort(function (a, b) {
+      var da = a.p.updated || '', db = b.p.updated || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return String(a.p.file).localeCompare(String(b.p.file));
+    });
+    return out;
+  }
+
+  function wikiHeaderCard() {
     var html = '<div class="pk-card pad-lg">';
     html += '<h2 class="profile-name">' + t('wiki.title') + '</h2>';
     html += '<div class="profile-desc">' + t('wiki.desc') + '</div>';
@@ -530,18 +639,87 @@
         '<a href="#/wiki" data-clear-domain="1" style="font-size:14px">' + t('wiki.clear') + '</a></div>';
     }
     html += '</div>';
+    return html;
+  }
 
-    var any = false;
-    TYPE_ORDER.forEach(function (type) {
-      var pages = (DATA.pages[type] || []).filter(function (p) {
-        return !state.wikiDomain || p.domain === state.wikiDomain;
-      });
-      if (!pages.length) return;
-      any = true;
-      html += sectionTitle(TYPE_ICON[type], t('type.' + typeClass(type)), pages.length);
+  var WIKI_COLUMN_LIMIT = 5;
+
+  function viewWiki() {
+    renderNav('wiki');
+    setPageTitle(t('nav.wiki'));
+
+    var html = wikiHeaderCard();
+
+    // standalone "daily papers" column
+    var daily = allDailyPages().filter(function (d) {
+      return !state.wikiDomain || d.p.domain === state.wikiDomain;
+    });
+    html += sectionTitle('fa-newspaper', t('daily.title'), daily.length);
+    if (daily.length) {
       html += '<div class="pk-card"><div class="pub-list">';
+      daily.slice(0, 3).forEach(function (d) { html += pubItem(d.type, d.p); });
+      html += '</div></div>';
+    } else {
+      html += '<div class="pk-card"><div class="empty-state">' + t('daily.empty') + '</div></div>';
+    }
 
-      // group domain → topic
+    // one compact card per page type, recent pages only, laid out side by side
+    var cols = [];
+    TYPE_ORDER.forEach(function (type) {
+      var pages = sortPagesDesc((DATA.pages[type] || []).filter(function (p) {
+        return (!state.wikiDomain || p.domain === state.wikiDomain) && !isDaily(p);
+      }));
+      if (pages.length) cols.push({ type: type, pages: pages });
+    });
+    if (cols.length) {
+      html += '<div class="wiki-cols">';
+      cols.forEach(function (c) {
+        html += '<div class="pk-card col-card">';
+        html += '<div class="col-head"><i class="fa-solid ' + TYPE_ICON[c.type] + '"></i> ' +
+          t('type.' + typeClass(c.type)) +
+          ' <span class="count">' + c.pages.length + '</span>' +
+          ' <span class="col-note">' + tf('wiki.recent', { n: Math.min(WIKI_COLUMN_LIMIT, c.pages.length) }) + '</span>' +
+          '<a class="col-all" href="#/wiki/' + c.type + '" data-go="#/wiki/' + c.type + '">' + tf('wiki.viewAll', { n: c.pages.length }) + '</a></div>';
+        // render every page; the ones beyond the base limit start hidden and
+        // are revealed by fillColumns() to even out the card heights per row
+        html += '<div class="pub-list compact" data-note-key="wiki.recent">';
+        c.pages.forEach(function (p, idx) { html += pubItem(c.type, p, idx >= WIKI_COLUMN_LIMIT); });
+        html += '</div></div>';
+      });
+      html += '</div>';
+    }
+
+    if (!cols.length && !daily.length) html += '<div class="empty-state big">' + t('wiki.empty') + '</div>';
+    html += footer();
+    app.innerHTML = html;
+    fillColumns();
+  }
+
+  /* full-length list of one page type (the old long view), reachable via
+     #/wiki/<type> from a column's "view all" link */
+  function viewWikiAll(type) {
+    if (TYPE_ORDER.indexOf(type) === -1) { viewWiki(); return; }
+    renderNav('wiki');
+    setPageTitle(t('type.' + typeClass(type)));
+
+    var html = '<div class="pk-card pad-lg">';
+    html += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<a class="back-link" style="margin-top:0" href="#/wiki" data-go="#/wiki"><i class="fa-solid fa-arrow-left"></i> ' + t('wiki.back') + '</a>' +
+      '<h2 class="profile-name" style="margin:0"><i class="fa-solid ' + TYPE_ICON[type] + '" style="color:var(--pk-link)"></i> ' +
+      t('type.' + typeClass(type)) + '</h2></div>';
+    if (state.wikiDomain) {
+      html += '<div style="margin-top:0.75rem"><span class="pk-badge b-source">' + t('wiki.domain') + esc(state.wikiDomain) + '</span> ' +
+        '<a href="#/wiki" data-clear-domain="1" style="font-size:14px">' + t('wiki.clear') + '</a></div>';
+    }
+    html += '</div>';
+
+    var pages = sortPagesDesc((DATA.pages[type] || []).filter(function (p) {
+      return !state.wikiDomain || p.domain === state.wikiDomain;
+    }));
+    if (!pages.length) {
+      html += '<div class="empty-state big">' + t('wiki.empty') + '</div>';
+    } else {
+      html += '<div class="pk-card"><div class="pub-list">';
       var domains = {};
       pages.forEach(function (p) {
         var d = p.domain || t('unclassified'), tp = p.topic || t('unclassified');
@@ -555,11 +733,63 @@
         });
       });
       html += '</div></div>';
-    });
-
-    if (!any) html += '<div class="empty-state big">' + t('wiki.empty') + '</div>';
+    }
     html += footer();
     app.innerHTML = html;
+  }
+
+  /* original file name first; the translation is shown alongside when present */
+  function rawName(r) {
+    var base = r.title || r.file.split('/').pop();
+    var alt = r['title_' + lang];
+    return alt && alt !== base ? base + ' · ' + alt : base;
+  }
+
+  /* "recency" for raw files: the YYYYMMDD- prefix of the file name */
+  function rawDateKey(r) {
+    var m = String(r.file || '').split('/').pop().match(/^(\d{8})-/);
+    return m ? m[1] : '00000000';
+  }
+
+  function sortRawDesc(list) {
+    return list.slice().sort(function (a, b) {
+      var da = rawDateKey(a), db = rawDateKey(b);
+      if (da !== db) return da < db ? 1 : -1;
+      return String(a.file).localeCompare(String(b.file));
+    });
+  }
+
+  var RAW_COLUMN_LIMIT = 5;
+
+  function rawRow(mt, r, hidden) {
+    var rd = L(r, 'description');
+    return '<div class="pub-item"' + (hidden ? ' style="display:none"' : '') + '>' +
+      '<div class="pub-cover cov-raw"><i class="fa-solid ' + (RAW_ICON[mt] || 'fa-file') + '"></i></div>' +
+      '<div class="pub-body"><div class="pub-title">' +
+      '<a href="../raw/' + esc(r.file) + '" target="_blank" rel="noopener">' + esc(rawName(r)) + '</a></div>' +
+      (rd ? '<div class="pub-desc">' + esc(rd) + '</div>' : '') +
+      '<div class="pub-meta">' +
+      '<span class="pk-badge b-log">' + esc(r.domain || '—') + '</span>' +
+      (r.topic ? '<span class="pk-badge b-log">' + esc(r.topic) + '</span>' : '') +
+      '<span class="path">' + esc(r.file) + '</span></div></div></div>';
+  }
+
+  function rawTable(list) {
+    var html = '<div class="pk-card pk-table-wrap"><table class="pk-table"><thead><tr>' +
+      '<th>' + t('raw.col.file') + '</th><th>' + t('raw.col.domain') + '</th><th>' + t('raw.col.topic') + '</th><th>' + t('raw.col.desc') + '</th></tr></thead><tbody>';
+    list.forEach(function (r) {
+      html += '<tr><td><a href="../raw/' + esc(r.file) + '" target="_blank" rel="noopener">' + esc(rawName(r)) + '</a>' +
+        '<div class="file-path">' + esc(r.file) + '</div></td>' +
+        '<td>' + esc(r.domain || '—') + '</td>' +
+        '<td>' + esc(r.topic || '—') + '</td>' +
+        '<td>' + esc(L(r, 'description')) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function rawTypeList(mt) {
+    return (DATA.raw || []).filter(function (r) { return (r.materialType || 'misc') === mt; });
   }
 
   function viewRaw() {
@@ -574,38 +804,84 @@
     var raws = DATA.raw || [];
     if (!raws.length) {
       html += '<div class="empty-state big">' + t('raw.empty') + '</div>';
-    }
-
-    function rawName(r) {
-      // original file name first; the translation is shown alongside when present
-      var base = r.title || r.file.split('/').pop();
-      var alt = r['title_' + lang];
-      return alt && alt !== base ? base + ' · ' + alt : base;
-    }
-
-    var types = {};
-    raws.forEach(function (r) { (types[r.materialType || 'misc'] = types[r.materialType || 'misc'] || []).push(r); });
-    Object.keys(types).sort(function (a, b) { return rawSortKey(a) - rawSortKey(b) || a.localeCompare(b); }).forEach(function (mt) {
-      var list = types[mt];
-      html += sectionTitle(RAW_ICON[mt] || 'fa-file', t('raw.' + mt), list.length);
-      html += '<div class="pk-card pk-table-wrap"><table class="pk-table"><thead><tr>' +
-        '<th>' + t('raw.col.file') + '</th><th>' + t('raw.col.domain') + '</th><th>' + t('raw.col.topic') + '</th><th>' + t('raw.col.desc') + '</th></tr></thead><tbody>';
-      list.forEach(function (r) {
-        var name = rawName(r);
-        var rd = L(r, 'description');
-        html += '<tr><td><a href="../raw/' + esc(r.file) + '">' + esc(name) + '</a>' +
-          '<div class="file-path">' + esc(r.file) + '</div></td>' +
-          '<td>' + esc(r.domain || '—') + '</td>' +
-          '<td>' + esc(r.topic || '—') + '</td>' +
-          '<td>' + esc(rd) + '</td></tr>';
+    } else {
+      // one compact card per material type, recent files only, side by side
+      var types = {};
+      raws.forEach(function (r) { (types[r.materialType || 'misc'] = types[r.materialType || 'misc'] || []).push(r); });
+      html += '<div class="wiki-cols">';
+      Object.keys(types).sort(function (a, b) { return rawSortKey(a) - rawSortKey(b) || a.localeCompare(b); }).forEach(function (mt) {
+        var list = sortRawDesc(types[mt]);
+        html += '<div class="pk-card col-card">';
+        html += '<div class="col-head"><i class="fa-solid ' + (RAW_ICON[mt] || 'fa-file') + '"></i> ' +
+          t('raw.' + mt) +
+          ' <span class="count">' + list.length + '</span>' +
+          ' <span class="col-note">' + tf('raw.recent', { n: Math.min(RAW_COLUMN_LIMIT, list.length) }) + '</span>' +
+          '<a class="col-all" href="#/raw/' + mt + '" data-go="#/raw/' + mt + '">' + tf('wiki.viewAll', { n: list.length }) + '</a></div>';
+        // same fill-on-render strategy as the wiki columns
+        html += '<div class="pub-list compact" data-note-key="raw.recent">';
+        list.forEach(function (r, idx) { html += rawRow(mt, r, idx >= RAW_COLUMN_LIMIT); });
+        html += '</div></div>';
       });
-      html += '</tbody></table></div>';
-    });
+      html += '</div>';
+    }
 
+    html += footer();
+    app.innerHTML = html;
+    fillColumns();
+  }
+
+  /* full inventory table of one material type, reachable via #/raw/<type> */
+  function viewRawAll(mt) {
+    renderNav('raw');
+    setPageTitle(t('raw.' + mt));
+
+    var html = '<div class="pk-card pad-lg">';
+    html += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<a class="back-link" style="margin-top:0" href="#/raw" data-go="#/raw"><i class="fa-solid fa-arrow-left"></i> ' + t('raw.back') + '</a>' +
+      '<h2 class="profile-name" style="margin:0"><i class="fa-solid ' + (RAW_ICON[mt] || 'fa-file') + '" style="color:var(--pk-link)"></i> ' +
+      t('raw.' + mt) + '</h2></div>';
+    html += '</div>';
+
+    var list = sortRawDesc(rawTypeList(mt));
+    if (!list.length) {
+      html += '<div class="empty-state big">' + t('raw.empty') + '</div>';
+    } else {
+      html += rawTable(list);
+    }
     html += footer();
     app.innerHTML = html;
   }
 
+  var LOG_ACTION_LIMIT = 5;
+  var ACT_ORDER = ['ingest', 'add', 'query', 'update', 'create', 'lint', 'fix', 'archive', 'delete'];
+
+  function actOrderKey(a) {
+    var i = ACT_ORDER.indexOf(a);
+    return i === -1 ? ACT_ORDER.length : i;
+  }
+
+  function actBadge(a) {
+    // normalize: real log data mixes cases ("Add" vs "add", "Fix" vs "fix")
+    a = String(a || 'log').toLowerCase();
+    var actCls = 'b-' + a.replace(/^query$/, 'query-act');
+    if (!/^b-(add|ingest|query-act|lint|create|update|fix|archive|delete|log)$/.test(actCls)) actCls = 'b-log';
+    return '<span class="pk-badge ' + actCls + '"><i class="fa-solid ' + (ACT_ICON[a] || 'fa-gear') + '"></i> ' + esc(a) + '</span>';
+  }
+
+  function logItem(l, hidden) {
+    var lt = L(l, 'title'), ld = L(l, 'detail');
+    return '<li class="news-item"' + (hidden ? ' style="display:none"' : '') + '><span class="news-date">' + esc(l.date) + (l.time ? ' ' + esc(l.time) : '') + '</span>' +
+      '<div class="news-body">' + actBadge(l.action || 'log') + ' ' +
+      '<span class="news-title">' + esc(lt) + '</span>' +
+      (ld ? '<div class="news-detail">' + esc(ld) + '</div>' : '') + '</div></li>';
+  }
+
+  function logTimeline(logs, twoCol) {
+    return '<div class="pk-card"><ul class="news-list' + (twoCol ? ' news-cols' : '') + '">' +
+      logs.map(function (l) { return logItem(l); }).join('') + '</ul></div>';
+  }
+
+  /* one compact card per action type, recent entries only, side by side */
   function viewLog() {
     renderNav('log');
     setPageTitle(t('nav.log'));
@@ -619,18 +895,69 @@
     if (!logs.length) {
       html += '<div class="empty-state big">' + t('log.empty') + '</div>';
     } else {
-      html += '<div class="pk-card"><ul class="news-list">';
+      var byAct = {};
       logs.forEach(function (l) {
-        var actCls = 'b-' + (l.action || 'log').replace(/^query$/, 'query-act');
-        if (!/^b-(add|ingest|query-act|lint|create|update|archive|delete|log)$/.test(actCls)) actCls = 'b-log';
-        var icon = ACT_ICON[l.action] || 'fa-gear';
-        var lt = L(l, 'title'), ld = L(l, 'detail');
-        html += '<li class="news-item"><span class="news-date">' + esc(l.date) + (l.time ? ' ' + esc(l.time) : '') + '</span>' +
-          '<div class="news-body"><span class="pk-badge ' + actCls + '"><i class="fa-solid ' + icon + '"></i> ' + esc(l.action) + '</span> ' +
-          '<span class="news-title">' + esc(lt) + '</span>' +
-          (ld ? '<div class="news-detail">' + esc(ld) + '</div>' : '') + '</div></li>';
+        var a = String(l.action || 'log').toLowerCase();
+        (byAct[a] = byAct[a] || []).push(l);
       });
-      html += '</ul></div>';
+      html += '<div class="wiki-cols">';
+      Object.keys(byAct).sort(function (a, b) { return actOrderKey(a) - actOrderKey(b) || a.localeCompare(b); }).forEach(function (a) {
+        var list = byAct[a]; // data.js is newest-first, keep that order
+        html += '<div class="pk-card col-card">';
+        html += '<div class="col-head">' + actBadge(a) +
+          ' <span class="count">' + list.length + '</span>' +
+          ' <span class="col-note">' + tf('log.recent', { n: Math.min(LOG_ACTION_LIMIT, list.length) }) + '</span>' +
+          '<a class="col-all" href="#/log/action/' + a + '" data-go="#/log/action/' + a + '">' + tf('log.viewAll', { n: list.length }) + '</a></div>';
+        html += '<ul class="news-list compact">';
+        list.forEach(function (l, idx) { html += logItem(l, idx >= LOG_ACTION_LIMIT); });
+        html += '</ul></div>';
+      });
+      html += '</div>';
+    }
+    html += footer();
+    app.innerHTML = html;
+  }
+
+  /* the complete chronological timeline (two columns on wide screens),
+     reachable via #/log/all */
+  function viewLogAll() {
+    renderNav('log');
+    setPageTitle(t('nav.log'));
+
+    var logs = DATA.log || [];
+    var html = '<div class="pk-card pad-lg">';
+    html += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<a class="back-link" style="margin-top:0" href="#/log" data-go="#/log"><i class="fa-solid fa-arrow-left"></i> ' + t('log.back') + '</a>' +
+      '<h2 class="profile-name" style="margin:0"><i class="fa-solid fa-clock-rotate-left" style="color:var(--pk-link)"></i> ' +
+      t('log.title') + ' <span class="count" style="font-size:14px;font-weight:400;color:var(--pk-muted)">' + logs.length + '</span></h2></div>';
+    html += '</div>';
+
+    if (!logs.length) {
+      html += '<div class="empty-state big">' + t('log.empty') + '</div>';
+    } else {
+      html += logTimeline(logs, true);
+    }
+    html += footer();
+    app.innerHTML = html;
+  }
+
+  /* every entry of one action type, reachable via #/log/action/<action> */
+  function viewLogAction(a) {
+    renderNav('log');
+    var logs = (DATA.log || []).filter(function (l) { return String(l.action || 'log').toLowerCase() === a; });
+    setPageTitle(a);
+
+    var html = '<div class="pk-card pad-lg">';
+    html += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<a class="back-link" style="margin-top:0" href="#/log" data-go="#/log"><i class="fa-solid fa-arrow-left"></i> ' + t('log.back') + '</a>' +
+      '<h2 class="profile-name" style="margin:0">' + actBadge(a) +
+      ' <span class="count" style="font-size:14px;font-weight:400;color:var(--pk-muted)">' + logs.length + '</span></h2></div>';
+    html += '</div>';
+
+    if (!logs.length) {
+      html += '<div class="empty-state big">' + t('log.empty') + '</div>';
+    } else {
+      html += logTimeline(logs, logs.length > 12);
     }
     html += footer();
     app.innerHTML = html;
@@ -648,6 +975,9 @@
     renderNav('wiki');
     var pTitle = L(p, 'title');
     var pBody = L(p, 'body');
+    // the header above already shows the page title; per the SCHEMA the body
+    // starts with the same H1 — drop that duplicate leading heading
+    pBody = String(pBody || '').replace(/^\s{0,3}#[^\n]*\n+/, '');
     setPageTitle(pTitle);
 
     var html = '<div class="pk-card article-card">';
@@ -666,14 +996,64 @@
     if (body) renderMath(body);
   }
 
+  /* Reveal hidden column items so that the cards of each grid row end up
+     the same height: instead of leaving white space under the sparser
+     card, it shows a few more entries (never re-hides, so it is safe to
+     re-run on resize / re-render). */
+  function fillColumns() {
+    var grids = app.querySelectorAll('.wiki-cols');
+    for (var g = 0; g < grids.length; g++) {
+      var grid = grids[g];
+      var cols = (getComputedStyle(grid).gridTemplateColumns.match(/px/g) || []).length || 1;
+      if (cols < 2) continue; // single column: no side-by-side card to match
+      var cards = grid.children;
+      for (var r = 0; r + cols <= cards.length; r += cols) {
+        var row = Array.prototype.slice.call(cards, r, r + cols);
+        // grid stretch would already have equalized the card heights, hiding
+        // the content-height difference — measure with align-self: start,
+        // then restore stretch after filling
+        row.forEach(function (c) { c.style.alignSelf = 'start'; });
+        var target = 0;
+        row.forEach(function (c) { if (c.offsetHeight > target) target = c.offsetHeight; });
+        row.forEach(function (c) {
+          var hidden = c.querySelectorAll('.pub-item[style*="display:none"]');
+          while (hidden.length && c.offsetHeight < target) {
+            hidden[0].style.display = '';
+            hidden = c.querySelectorAll('.pub-item[style*="display:none"]');
+          }
+        });
+        row.forEach(function (c) { c.style.alignSelf = ''; });
+        row.forEach(function (c) {
+          var list = c.querySelector('.pub-list[data-note-key]');
+          if (!list) return;
+          var n = c.querySelectorAll('.pub-item:not([style*="display:none"])').length;
+          var note = c.querySelector('.col-note');
+          if (note) note.textContent = tf(list.getAttribute('data-note-key'), { n: n });
+        });
+      }
+    }
+  }
+  var fillTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(fillTimer);
+    fillTimer = setTimeout(fillColumns, 100);
+  });
+
   /* ---------------- router ---------------- */
 
   function route() {
     var h = location.hash || '#/';
     if (h === '#' || h === '#/') { viewHome(); return; }
     if (h === '#/wiki') { viewWiki(); return; }
+    var wm = h.match(/^#\/wiki\/([a-z]+)$/);
+    if (wm) { viewWikiAll(wm[1]); return; }
     if (h === '#/raw') { viewRaw(); return; }
+    var rm = h.match(/^#\/raw\/([a-z-]+)$/);
+    if (rm) { viewRawAll(rm[1]); return; }
     if (h === '#/log') { viewLog(); return; }
+    if (h === '#/log/all') { viewLogAll(); return; }
+    var lam = h.match(/^#\/log\/action\/([a-z-]+)$/);
+    if (lam) { viewLogAction(lam[1]); return; }
     var pm = h.match(/^#\/page\/([a-z]+)\/(.+)$/);
     if (pm) { viewArticle(pm[1], decodeURIComponent(pm[2])); return; }
     viewHome();
@@ -712,7 +1092,13 @@
     });
   }
 
-  window.addEventListener('hashchange', route);
+  // hashchange: re-render, then jump back to the top — the browser keeps the
+  // old scroll offset when the new hash matches no element id, which would
+  // otherwise land the reader in the middle of the new page
+  window.addEventListener('hashchange', function () {
+    route();
+    window.scrollTo(0, 0);
+  });
 
   if (!DATA) {
     applyLang();

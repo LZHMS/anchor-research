@@ -1,0 +1,14 @@
+# ─── research-daily-ideas skill dependencies ───────────────────────────────
+# Step 1 (Zotero)     : MCP tools (mcp__zotero__*) — no pip deps
+# Step 2 (fetch/rank) :
+pyyaml>=6.0
+requests>=2.31
+sentence-transformers>=2.6
+numpy>=1.24
+# Step 3 (download/convert) — PyMuPDF enables PDF→PNG figure conversion;
+# pypdf enables PDF text extraction for non-arXiv papers.
+# Both optional: the script degrades gracefully without them (it prints what's missing).
+PyMuPDF>=1.24
+pypdf>=4.0
+# Note: EPS→PNG conversion additionally requires Ghostscript on the system PATH
+# (gs / gswin64c). Without it, EPS figures are left unconverted and flagged in the manifest.
