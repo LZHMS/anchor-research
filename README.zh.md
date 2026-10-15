@@ -1,28 +1,20 @@
 <div align="center">
 
-# ⚓ Anchor Research
+<img src="assets/anchor-research-banner.svg" alt="Anchor Research" width="880">
 
-### *Anchor first. Automate second.*（先下锚，再自动化）
+<h3><i>Anchor first. Automate second.（先下锚，再自动化）</i></h3>
 
-**基于人机对齐锚点门控的自动化科研（Auto Research）Skill 框架系统**
+<p><b>基于人机对齐锚点门控的自动化科研（Auto Research）Skill 框架系统</b></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Framework: Anchor-First](https://img.shields.io/badge/Framework-Anchor--First-065F46.svg?style=for-the-badge)](#-什么是锚点anchor)
 [![Skills: 14 Modules](https://img.shields.io/badge/Skills-14%20Integrated-7C3AED.svg?style=for-the-badge)](#-skills-一览)
 [![Runtime: Host-Neutral](https://img.shields.io/badge/Runtimes-Claude%20Code%20%7C%20Copilot%20%7C%20Neutral-2563EB.svg?style=for-the-badge)](#-使用方式与环境兼容)
 
-<br>
-
 <p align="center">
   <a href="README.md"><b>English</b></a> •
   <a href="#readme"><b>简体中文</b></a>
 </p>
-
-<br>
-
-<img src="assets/anchor-research-banner.svg" alt="Anchor Research 架构总览" width="100%">
-
-<br>
 
 [🎯 核心动机](#-核心动机为什么需要-anchor-research) •
 [⚓ 什么是锚点](#-什么是锚点anchor) •

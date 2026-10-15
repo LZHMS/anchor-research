@@ -1,215 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" width="100%" height="100%">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b0f19"/>
-      <stop offset="50%" stop-color="#111827"/>
-      <stop offset="100%" stop-color="#070a12"/>
-    </linearGradient>
-    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="50%" stop-color="#818cf8"/>
-      <stop offset="100%" stop-color="#c084fc"/>
-    </linearGradient>
-    <linearGradient id="cardGradDark" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
-    </linearGradient>
-    <linearGradient id="anchorPillGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#059669"/>
-    </linearGradient>
-    <linearGradient id="badGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#dc2626"/>
-      <stop offset="100%" stop-color="#b91c1c"/>
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 200" width="1080" height="200" xml:space="preserve">
+  <!-- Clean White Background with subtle rounded corners -->
+  <rect width="1080" height="200" rx="16" fill="#ffffff"/>
 
-  <style>
-    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 38px; font-weight: 800; fill: url(#titleGrad); letter-spacing: 1px; }
-    .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; fill: #94a3b8; }
-    .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; }
-    .badge-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #f8fafc; }
-    .step-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #f1f5f9; }
-    .step-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; fill: #94a3b8; }
-    .anchor-badge { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 700; fill: #38bdf8; }
-    .warn-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #fca5a5; }
-    .warn-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #ef4444; }
-  </style>
+  <g transform="translate(45, 20)">
 
-  <!-- Canvas Background -->
-  <rect x="0" y="0" width="1200" height="480" rx="16" fill="url(#bgGrad)" stroke="#334155" stroke-width="1.5"/>
+    <!-- ================= 1. UPRIGHT ARTISTIC ANCHOR EMBLEM (NO TILT) ================= -->
+    <g transform="translate(85, 80)">
+      <!-- Soft ambient aura -->
+      <circle cx="0" cy="0" r="56" fill="#f8fafc"/>
+      <circle cx="0" cy="0" r="45" fill="#f0f9ff"/>
 
-  <!-- Subtle glow circles in background -->
-  <circle cx="200" cy="80" r="120" fill="#38bdf8" opacity="0.06" filter="url(#glow)"/>
-  <circle cx="950" cy="380" r="140" fill="#818cf8" opacity="0.06" filter="url(#glow)"/>
+      <!-- Dynamic Liquid Splash (Coral/Amber on left, Cyan/Azure on right) -->
+      <!-- Left Amber Wave -->
+      <path d="M-6,-18 C-18,-38 -36,-46 -26,-66 C-16,-84 10,-72 4,-55 C-1,-44 2,-30 -6,-18 Z" fill="#f97316"/>
+      <path d="M-12,-25 C-24,-38 -38,-40 -32,-52 C-26,-62 -12,-55 -14,-44 Z" fill="#fbbf24"/>
 
-  <!-- Top Hero Header -->
-  <g transform="translate(60, 48)">
-    <!-- Anchor Icon SVG -->
-    <g transform="translate(0, 2) scale(1.3)">
-      <path d="M12 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1 7V9h2v2h4a1 1 0 1 1 0 2h-4v7.92A7.002 7.002 0 0 1 5.08 16H8a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1 9.002 9.002 0 0 0 9 8.94V13H7a1 1 0 1 1 0-2h4z" fill="#38bdf8"/>
-    </g>
-    <text x="42" y="28" class="title">ANCHOR RESEARCH</text>
-    <text x="42" y="54" class="subtitle">Anchor first. Automate second. — Human-in-the-Loop Auto Research Skill Framework</text>
-    
-    <!-- Header Feature Pills -->
-    <g transform="translate(730, 10)">
-      <rect x="0" y="0" width="110" height="26" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
-      <text x="14" y="17" class="badge-text" fill="#38bdf8">🔒 Human-Gated</text>
+      <!-- Right Cyan Wave -->
+      <path d="M6,-14 C18,-32 40,-35 42,-58 C44,-78 20,-74 18,-56 C16,-42 12,-28 6,-14 Z" fill="#0284c7"/>
+      <path d="M14,-20 C28,-34 44,-36 42,-48 C38,-58 24,-54 22,-44 Z" fill="#06b6d4"/>
 
-      <rect x="120" y="0" width="105" height="26" rx="13" fill="#1e293b" stroke="#818cf8" stroke-width="1"/>
-      <text x="134" y="17" class="badge-text" fill="#818cf8">🛡️ Anti-Drift</text>
+      <!-- Splashes & Droplets -->
+      <circle cx="-32" cy="-60" r="3.5" fill="#f97316"/>
+      <circle cx="-16" cy="-78" r="3" fill="#f59e0b"/>
+      <circle cx="26" cy="-78" r="3" fill="#06b6d4"/>
+      <circle cx="48" cy="-56" r="3.5" fill="#0284c7"/>
+      <circle cx="-42" cy="-35" r="2.5" fill="#fbbf24"/>
+      <circle cx="44" cy="-32" r="2.5" fill="#38bdf8"/>
 
-      <rect x="235" y="0" width="115" height="26" rx="13" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
-      <text x="249" y="17" class="badge-text" fill="#34d399">⚡ 14 Skills Chain</text>
-    </g>
-  </g>
+      <!-- THE ANCHOR ICON (Upright, Clean, Royal Navy) -->
+      <!-- Top Ring -->
+      <circle cx="0" cy="-24" r="13" fill="none" stroke="#1e3a8a" stroke-width="6"/>
+      <circle cx="0" cy="-24" r="5.5" fill="#38bdf8"/>
 
-  <!-- Divider Line -->
-  <line x1="60" y1="125" x2="1140" y2="125" stroke="#1e293b" stroke-width="1.5"/>
+      <!-- Stock (Crossbar with rounded caps) -->
+      <rect x="-26" y="-10" width="52" height="7" rx="3.5" fill="#1e3a8a"/>
+      <circle cx="-26" cy="-6.5" r="3.5" fill="#f97316"/>
+      <circle cx="26" cy="-6.5" r="3.5" fill="#06b6d4"/>
 
-  <!-- ================= SECTION 1: Traditional Auto Research (Unguided) ================= -->
-  <g transform="translate(60, 145)">
-    <!-- Label Badge -->
-    <rect x="0" y="0" width="220" height="24" rx="6" fill="#7f1d1d" opacity="0.6"/>
-    <text x="10" y="16" class="label" fill="#fca5a5">❌ Traditional Auto Research</text>
-    <text x="232" y="16" class="subtitle" font-size="12px">Unguided agent exploration → Silent goal drift → Wasted GPU-months</text>
+      <!-- Central Vertical Shank -->
+      <rect x="-4" y="-6" width="8" height="46" rx="4" fill="#1e3a8a"/>
+      <!-- Inner highlight reflection line -->
+      <line x1="-1" y1="-2" x2="-1" y2="30" stroke="#93c5fd" stroke-width="2" stroke-linecap="round"/>
 
-    <!-- Flow line behind cards -->
-    <line x1="90" y1="62" x2="980" y2="62" stroke="#450a0a" stroke-width="2" stroke-dasharray="4 4"/>
+      <!-- Curved Bottom Arms -->
+      <path d="M-34,14 C-30,42 -12,52 0,52 C12,52 30,42 34,14" fill="none" stroke="#1e3a8a" stroke-width="7" stroke-linecap="round"/>
 
-    <!-- Step 1: Vague Idea -->
-    <g transform="translate(0, 36)">
-      <rect x="0" y="0" width="170" height="52" rx="8" fill="#18181b" stroke="#71717a" stroke-width="1"/>
-      <text x="16" y="24" class="step-title">1. Vague Prompt</text>
-      <text x="16" y="40" class="step-sub">Broad direction given</text>
+      <!-- Fluke Arrowheads -->
+      <polygon points="-36,11 -46,22 -28,22" fill="#1e3a8a"/>
+      <polygon points="36,11 28,22 46,22" fill="#1e3a8a"/>
+
+      <!-- Base Crown Pivot Bead -->
+      <circle cx="0" cy="52" r="4" fill="#f97316"/>
     </g>
 
-    <text x="188" y="66" fill="#71717a" font-size="16px" font-weight="bold">→</text>
+    <!-- ================= 2. PURE COMIC SANS MS BOLD ITALIC VECTOR WORDMARK ================= -->
+    <g transform="translate(185, 115)">
+      <!-- "Anchor" in soft lavender purple (#9ea0fa, KDTalker palette) -->
+      <g fill="#9ea0fa">
+        <path d="M1064 428Q988 418 818 406Q650 396 572 381Q391 81 343.5 29.0Q296 -23 226 -23Q172 -23 136.5 10.0Q101 43 101 90Q101 143 306 457Q300 472 300 484Q300 558 411 590Q1083 1479 1177 1479Q1284 1479 1304 1346Q1304 1160 1329.0 770.0Q1354 380 1364.0 336.0Q1374 292 1390 233Q1407 164 1407 124Q1407 63 1355.5 16.0Q1304 -31 1240 -31Q1115 -31 1064 428ZM1029 995Q896 813 757 631Q808 641 902 647Q1012 653 1041 657Q1041 789 1029 995Z" transform="translate(0.00, 0) scale(0.0469, -0.0469)" />
+<path d="M513 924Q682 1071 843 1071Q1095 1071 1095 781Q1095 702 1078 596L1066 524Q1041 374 1041 258Q1041 122 1034.0 66.5Q1027 11 982.5 -30.5Q938 -72 876 -72Q757 -72 757 43Q757 296 772.0 414.5Q787 533 822 678Q836 734 836 757Q836 807 802 807Q707 807 600.0 694.5Q493 582 438.5 464.5Q384 347 372 166Q368 79 356.0 45.5Q344 12 303.5 -18.5Q263 -49 206 -49Q154 -49 120.5 -19.0Q87 11 87 58L95 166Q103 276 159 516Q213 738 221 823Q229 917 237.5 967.0Q246 1017 291.5 1054.5Q337 1092 398 1092Q528 1092 513 936Z" transform="translate(70.22, 0) scale(0.0469, -0.0469)" />
+<path d="M67 328Q67 557 270.0 810.0Q473 1063 691 1063Q802 1063 935.5 1002.5Q1069 942 1069 863Q1069 810 1024.5 765.5Q980 721 920 721Q875 721 824 766Q771 813 650 813Q570 813 450.5 648.0Q331 483 331 373Q331 291 392.0 239.5Q453 188 564 188Q632 188 736 240Q844 291 869 291Q918 291 949.5 257.5Q981 224 981 180Q981 92 804.0 14.5Q627 -63 525 -63Q318 -63 192.5 45.0Q67 153 67 328Z" transform="translate(120.47, 0) scale(0.0469, -0.0469)" />
+<path d="M540 915Q706 1059 896 1059Q1031 1059 1098.0 1000.5Q1165 942 1165 803Q1165 774 1162 741Q1121 461 1121 214Q1121 124 1126 85Q1131 40 1083.5 -10.5Q1036 -61 964 -61Q891 -61 864.5 -13.5Q838 34 838 210Q838 414 882 616Q898 694 898 731Q898 791 855 791Q682 791 482 494Q423 116 371.0 45.5Q319 -25 241 -25Q186 -25 151.0 9.0Q116 43 116 86Q116 119 138 160Q152 192 213 572L298 1098L306 1130Q341 1270 341 1380Q341 1472 358.0 1510.5Q375 1549 416.5 1575.5Q458 1602 507 1602Q628 1602 628 1446Q628 1328 577 1110Q558 1026 540 915Z" transform="translate(169.78, 0) scale(0.0469, -0.0469)" />
+<path d="M95 352Q95 602 276.5 819.0Q458 1036 743 1036Q907 1036 1000.5 924.5Q1094 813 1094 630Q1094 367 922.5 154.0Q751 -59 495 -59Q317 -59 206.0 57.5Q95 174 95 352ZM375 392Q375 307 416.5 256.0Q458 205 536 205Q666 205 743.0 314.5Q820 424 820 596Q820 772 685 772Q553 772 464.0 644.5Q375 517 375 392Z" transform="translate(225.23, 0) scale(0.0469, -0.0469)" />
+<path d="M1053 721Q1045 664 1004.5 615.5Q964 567 889 567Q783 567 783 663Q783 679 786 698L795 799Q566 764 436 567L358 66Q349 10 305.0 -29.0Q261 -68 199 -68Q143 -68 114.0 -30.5Q85 7 94 66L197 721L222 864Q233 934 248.5 964.0Q264 994 298.5 1015.0Q333 1036 379 1036Q491 1036 494 922Q692 1055 907 1055Q1071 1055 1071 874Q1071 835 1063 788Z" transform="translate(275.72, 0) scale(0.0469, -0.0469)" />
+      </g>
+      
+      <!-- "Research" in soft sky-blue (#70b5ff, KDTalker palette) -->
+      <g transform="translate(349.84, 0)" fill="#70b5ff">
+        <path d="M423 424 387 116Q378 46 330.5 5.5Q283 -35 222 -35Q168 -35 134.5 -2.0Q101 31 101 77Q101 103 142 326L310 1358Q321 1429 374.5 1482.5Q428 1536 517 1536Q635 1536 740 1521Q878 1501 947.5 1472.0Q1017 1443 1119.0 1370.0Q1221 1297 1279.5 1200.5Q1338 1104 1338 991Q1338 670 910 516Q1030 448 1157.5 332.5Q1285 217 1285 148Q1285 87 1235.0 37.5Q1185 -12 1121 -12Q1067 -12 1027 31Q766 316 423 424ZM562 1253 478 723H521Q789 723 921.5 797.0Q1054 871 1054 945Q1054 1047 931.0 1142.5Q808 1238 661 1247Q660 1247 562 1253Z" transform="translate(0.00, 0) scale(0.0469, -0.0469)" />
+<path d="M351 301Q437 197 607 197Q739 197 842 252Q934 301 984 301Q1072 301 1072 225Q1072 108 914.0 31.5Q756 -45 568 -45Q337 -45 206.5 58.5Q76 162 76 337Q76 582 250.5 813.0Q425 1044 713 1044Q902 1044 1007.5 981.5Q1113 919 1113 804Q1113 695 1029.5 620.5Q946 546 711 451ZM369 555 611 651Q743 708 844 766Q785 803 677 803Q492 803 369 555Z" transform="translate(61.45, 0) scale(0.0469, -0.0469)" />
+<path d="M797 815Q756 821 715 821Q465 821 465 752Q465 712 594 651Q808 543 878.5 471.5Q949 400 949 304Q949 156 805.5 48.5Q662 -59 416 -59Q274 -59 164.0 -11.0Q54 37 54 120Q54 246 191 246Q237 246 318 217Q407 188 449 188Q665 188 665 277Q665 325 543 383Q334 481 263.5 545.0Q193 609 193 711Q193 859 321.0 963.0Q449 1067 838 1067Q1032 1067 1032 946Q1032 883 1000.0 807.0Q968 731 904 731Q803 731 797 815Z" transform="translate(115.12, 0) scale(0.0469, -0.0469)" />
+<path d="M351 301Q437 197 607 197Q739 197 842 252Q934 301 984 301Q1072 301 1072 225Q1072 108 914.0 31.5Q756 -45 568 -45Q337 -45 206.5 58.5Q76 162 76 337Q76 582 250.5 813.0Q425 1044 713 1044Q902 1044 1007.5 981.5Q1113 919 1113 804Q1113 695 1029.5 620.5Q946 546 711 451ZM369 555 611 651Q743 708 844 766Q785 803 677 803Q492 803 369 555Z" transform="translate(161.86, 0) scale(0.0469, -0.0469)" />
+<path d="M754 35Q557 -55 459 -55Q47 -55 47 324Q47 639 267.0 841.5Q487 1044 754 1044Q852 1044 972.5 986.5Q1093 929 1093 856Q1093 811 1061 776Q1027 696 1003.5 544.0Q980 392 980 316Q980 272 986 254L1016 156Q1039 78 1039 60Q1039 22 994.0 -22.0Q949 -66 883 -66Q840 -66 754 35ZM789 786Q759 805 732 805Q583 805 456.0 679.5Q329 554 329 359Q329 182 484 182Q610 182 719 264Q730 642 789 786Z" transform="translate(215.53, 0) scale(0.0469, -0.0469)" />
+<path d="M1053 721Q1045 664 1004.5 615.5Q964 567 889 567Q783 567 783 663Q783 679 786 698L795 799Q566 764 436 567L358 66Q349 10 305.0 -29.0Q261 -68 199 -68Q143 -68 114.0 -30.5Q85 7 94 66L197 721L222 864Q233 934 248.5 964.0Q264 994 298.5 1015.0Q333 1036 379 1036Q491 1036 494 922Q692 1055 907 1055Q1071 1055 1071 874Q1071 835 1063 788Z" transform="translate(268.88, 0) scale(0.0469, -0.0469)" />
+<path d="M67 328Q67 557 270.0 810.0Q473 1063 691 1063Q802 1063 935.5 1002.5Q1069 942 1069 863Q1069 810 1024.5 765.5Q980 721 920 721Q875 721 824 766Q771 813 650 813Q570 813 450.5 648.0Q331 483 331 373Q331 291 392.0 239.5Q453 188 564 188Q632 188 736 240Q844 291 869 291Q918 291 949.5 257.5Q981 224 981 180Q981 92 804.0 14.5Q627 -63 525 -63Q318 -63 192.5 45.0Q67 153 67 328Z" transform="translate(315.00, 0) scale(0.0469, -0.0469)" />
+<path d="M540 915Q706 1059 896 1059Q1031 1059 1098.0 1000.5Q1165 942 1165 803Q1165 774 1162 741Q1121 461 1121 214Q1121 124 1126 85Q1131 40 1083.5 -10.5Q1036 -61 964 -61Q891 -61 864.5 -13.5Q838 34 838 210Q838 414 882 616Q898 694 898 731Q898 791 855 791Q682 791 482 494Q423 116 371.0 45.5Q319 -25 241 -25Q186 -25 151.0 9.0Q116 43 116 86Q116 119 138 160Q152 192 213 572L298 1098L306 1130Q341 1270 341 1380Q341 1472 358.0 1510.5Q375 1549 416.5 1575.5Q458 1602 507 1602Q628 1602 628 1446Q628 1328 577 1110Q558 1026 540 915Z" transform="translate(364.31, 0) scale(0.0469, -0.0469)" />
+      </g>
 
-    <!-- Step 2: Autonomous Loop -->
-    <g transform="translate(210, 36)">
-      <rect x="0" y="0" width="210" height="52" rx="8" fill="#1c1917" stroke="#ea580c" stroke-width="1"/>
-      <text x="16" y="24" class="warn-title">2. Blackbox Automation</text>
-      <text x="16" y="40" class="warn-sub">Auto-eval &amp; auto-stack baselines</text>
+      <!-- Sparkle Accents -->
+      <path d="M 800, -68 Q 800, -56 810, -56 Q 800, -56 800, -44 Q 800, -56 790, -56 Q 800, -56 800, -68 Z" fill="#fbbf24"/>
+      <circle cx="830" cy="-70" r="3.5" fill="#38bdf8"/>
     </g>
 
-    <text x="438" y="66" fill="#ea580c" font-size="16px" font-weight="bold">→</text>
-
-    <!-- Step 3: Unnoticed Drift -->
-    <g transform="translate(460, 36)">
-      <rect x="0" y="0" width="210" height="52" rx="8" fill="#261010" stroke="#ef4444" stroke-width="1"/>
-      <text x="16" y="24" class="warn-title">3. Unnoticed Drift</text>
-      <text x="16" y="40" class="warn-sub">Solves easier, unrelated problem</text>
-    </g>
-
-    <text x="688" y="66" fill="#ef4444" font-size="16px" font-weight="bold">→</text>
-
-    <!-- Step 4: Flawed Paper -->
-    <g transform="translate(710, 36)">
-      <rect x="0" y="0" width="210" height="52" rx="8" fill="#300d0d" stroke="#f87171" stroke-width="1.2"/>
-      <text x="16" y="24" class="warn-title">4. Hallucinated Paper</text>
-      <text x="16" y="40" class="warn-sub">Missed initial core goal</text>
-    </g>
-
-    <text x="938" y="66" fill="#ef4444" font-size="16px" font-weight="bold">→</text>
-
-    <!-- Step 5: Failure Badge -->
-    <g transform="translate(960, 36)">
-      <rect x="0" y="0" width="120" height="52" rx="8" fill="#450a0a" stroke="#b91c1c" stroke-width="1.5"/>
-      <text x="16" y="24" class="step-title" fill="#fecaca">💥 Reruns</text>
-      <text x="16" y="40" class="step-sub" fill="#fca5a5">GPU wasted</text>
-    </g>
-  </g>
-
-  <!-- ================= SECTION 2: Anchor Research Framework ================= -->
-  <g transform="translate(60, 280)">
-    <!-- Label Badge -->
-    <rect x="0" y="0" width="230" height="24" rx="6" fill="#064e3b" opacity="0.7"/>
-    <text x="10" y="16" class="label" fill="#6ee7b7">✓ Anchor Research Framework</text>
-    <text x="242" y="16" class="subtitle" font-size="12px">Continuous human alignment anchors + verifiable cryptographic digests</text>
-
-    <!-- Step 1: Knowledge & Literature -->
-    <g transform="translate(0, 36)">
-      <rect x="0" y="0" width="170" height="110" rx="10" fill="url(#cardGradDark)" stroke="#0284c7" stroke-width="1.2"/>
-      <rect x="12" y="10" width="146" height="20" rx="5" fill="#0369a1" opacity="0.3"/>
-      <text x="18" y="24" class="anchor-badge">📌 Anchor 0: Corpus</text>
-      <text x="16" y="52" class="step-title">Literature Ground</text>
-      <text x="16" y="70" class="step-sub">• Corpus Scope Approval</text>
-      <text x="16" y="86" class="step-sub">• Landscape Synthesis</text>
-      <text x="16" y="100" class="step-sub">• Evidence Limitations</text>
-    </g>
-
-    <!-- Arrow 1 -->
-    <g transform="translate(176, 85)">
-      <line x1="0" y1="0" x2="16" y2="0" stroke="#38bdf8" stroke-width="2"/>
-      <polygon points="16,-4 24,0 16,4" fill="#38bdf8"/>
-    </g>
-
-    <!-- Step 2: Problem Anchor & Ideas -->
-    <g transform="translate(204, 36)">
-      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#059669" stroke-width="1.2"/>
-      <rect x="12" y="10" width="166" height="20" rx="5" fill="#047857" opacity="0.3"/>
-      <text x="18" y="24" class="anchor-badge" fill="#34d399">📌 Anchor 1+2: Ideas</text>
-      <text x="16" y="52" class="step-title">Problem &amp; Method</text>
-      <text x="16" y="70" class="step-sub">• PROBLEM_ANCHOR.md</text>
-      <text x="16" y="86" class="step-sub">• FINAL_PROPOSAL.md</text>
-      <text x="16" y="100" class="step-sub">• Independent AC Review</text>
-    </g>
-
-    <!-- Arrow 2 -->
-    <g transform="translate(400, 85)">
-      <line x1="0" y1="0" x2="16" y2="0" stroke="#34d399" stroke-width="2"/>
-      <polygon points="16,-4 24,0 16,4" fill="#34d399"/>
-    </g>
-
-    <!-- Step 3: Experiment Planning -->
-    <g transform="translate(428, 36)">
-      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#6366f1" stroke-width="1.2"/>
-      <rect x="12" y="10" width="166" height="20" rx="5" fill="#4338ca" opacity="0.3"/>
-      <text x="18" y="24" class="anchor-badge" fill="#a5b4fc">📌 Anchor 3: Plan</text>
-      <text x="16" y="52" class="step-title">Roadmap &amp; Milestones</text>
-      <text x="16" y="70" class="step-sub">• Claim-Driven Blocks</text>
-      <text x="16" y="86" class="step-sub">• Task Projection Hash</text>
-      <text x="16" y="100" class="step-sub">• Compute Budget Cap</text>
-    </g>
-
-    <!-- Arrow 3 -->
-    <g transform="translate(624, 85)">
-      <line x1="0" y1="0" x2="16" y2="0" stroke="#818cf8" stroke-width="2"/>
-      <polygon points="16,-4 24,0 16,4" fill="#818cf8"/>
-    </g>
-
-    <!-- Step 4: Run & Execution -->
-    <g transform="translate(652, 36)">
-      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#8b5cf6" stroke-width="1.2"/>
-      <rect x="12" y="10" width="166" height="20" rx="5" fill="#6d28d9" opacity="0.3"/>
-      <text x="18" y="24" class="anchor-badge" fill="#c4b5fd">📌 Anchor 4: Tracker</text>
-      <text x="16" y="52" class="step-title">Execute &amp; Evaluate</text>
-      <text x="16" y="70" class="step-sub">• Ground Truth Eval</text>
-      <text x="16" y="86" class="step-sub">• Milestone Stop/Go</text>
-      <text x="16" y="100" class="step-sub">• Advisory Diagnostics</text>
-    </g>
-
-    <!-- Arrow 4 -->
-    <g transform="translate(848, 85)">
-      <line x1="0" y1="0" x2="16" y2="0" stroke="#c084fc" stroke-width="2"/>
-      <polygon points="16,-4 24,0 16,4" fill="#c084fc"/>
-    </g>
-
-    <!-- Step 5: Paper, Manuscript & Poster -->
-    <g transform="translate(876, 36)">
-      <rect x="0" y="0" width="204" height="110" rx="10" fill="url(#cardGradDark)" stroke="#ec4899" stroke-width="1.2"/>
-      <rect x="12" y="10" width="180" height="20" rx="5" fill="#be185d" opacity="0.3"/>
-      <text x="18" y="24" class="anchor-badge" fill="#f472b6">📌 Anchor 5,6,7: Deliver</text>
-      <text x="16" y="52" class="step-title">Paper &amp; Presentation</text>
-      <text x="16" y="70" class="step-sub">• Audited Results Bundle</text>
-      <text x="16" y="86" class="step-sub">• LaTeX Compiled Paper</text>
-      <text x="16" y="100" class="step-sub">• A0/A1 Poster &amp; Talk</text>
-    </g>
   </g>
 </svg>

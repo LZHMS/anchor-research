@@ -1,28 +1,20 @@
 <div align="center">
 
-# ⚓ Anchor Research
+<img src="assets/anchor-research-banner.svg" alt="Anchor Research" width="880">
 
-### *Anchor first. Automate second.*
+<h3><i>Anchor first. Automate second.</i></h3>
 
-**A Human-in-the-Loop Auto Research Skill Framework**
+<p><b>A Human-in-the-Loop Auto Research Skill Framework</b></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Framework: Anchor-First](https://img.shields.io/badge/Framework-Anchor--First-065F46.svg?style=for-the-badge)](#-what-is-an-anchor)
 [![Skills: 14 Modules](https://img.shields.io/badge/Skills-14%20Integrated-7C3AED.svg?style=for-the-badge)](#-skills-index)
 [![Runtime: Host-Neutral](https://img.shields.io/badge/Runtimes-Claude%20Code%20%7C%20Copilot%20%7C%20Neutral-2563EB.svg?style=for-the-badge)](#-usage--runtime-compatibility)
 
-<br>
-
 <p align="center">
   <a href="#readme"><b>English</b></a> •
   <a href="README.zh.md"><b>简体中文</b></a>
 </p>
-
-<br>
-
-<img src="assets/anchor-research-banner.svg" alt="Anchor Research System Architecture" width="100%">
-
-<br>
 
 [🎯 Motivation](#-why-anchor-research) •
 [⚓ What is an Anchor](#-what-is-an-anchor) •
