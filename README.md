@@ -280,29 +280,104 @@ Stage transitions between adjacent skills follow the **Explicit Handoff Protocol
 
 ---
 
-## 🛠️ Usage & Runtime Compatibility
+## 🛠️ Installation & Agent Framework Compatibility
 
-Anchor Research skills are designed to be **host-neutral** and run seamlessly with any AI agent environment that supports tools/skills:
+Anchor Research skills are **strictly host-neutral Markdown specifications** (`SKILL.md`). They require zero special platform plugins, zero runtime daemons, and zero vendor lock-in. **Installation in any agent harness is as simple as copying or symlinking the `skills/` directory.**
 
-### Claude Code / Anthropic Agent
-Link or copy the `skills/` directory into your project's `.claude/skills/` or global skills directory:
+### ⚡ Quick Start: One-Line Install
+
+First, clone the repository to your local machine:
 ```bash
-ln -s /path/to/anchor-research/skills ~/.claude/skills/anchor-research
+git clone https://github.com/LZHMS/anchor-research.git
+cd anchor-research
 ```
 
-### VS Code Copilot / Generic Agent
-Point your agent workspace settings to the `skills/` directory or load specific `SKILL.md` files as system prompts.
+#### macOS / Linux
+```bash
+# 1. OpenAI Codex CLI
+mkdir -p ~/.codex/skills && cp -r skills/* ~/.codex/skills/
 
-### Triggers & Usage Examples:
-- **Refine an Idea**: `refine my approach: <problem description>`
+# 2. Claude Code
+mkdir -p ~/.claude/skills && cp -r skills/* ~/.claude/skills/
+
+# 3. Hermes Agent
+mkdir -p ~/.hermes/skills && cp -r skills/* ~/.hermes/skills/
+
+# 4. Pi Agent
+mkdir -p ~/.pi/skills && cp -r skills/* ~/.pi/skills/
+
+# 5. OMP (Open Multi-Processing)
+mkdir -p ~/.omp/skills && cp -r skills/* ~/.omp/skills/
+
+# 6. DeepSeek Harness
+mkdir -p ~/.deepseek/skills && cp -r skills/* ~/.deepseek/skills/
+```
+
+#### Windows (PowerShell)
+```powershell
+# 1. OpenAI Codex CLI
+New-Item -ItemType Directory -Force "$HOME\.codex\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.codex\skills\"
+
+# 2. Claude Code
+New-Item -ItemType Directory -Force "$HOME\.claude\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.claude\skills\"
+
+# 3. Hermes Agent
+New-Item -ItemType Directory -Force "$HOME\.hermes\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.hermes\skills\"
+
+# 4. Pi Agent
+New-Item -ItemType Directory -Force "$HOME\.pi\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.pi\skills\"
+
+# 5. OMP
+New-Item -ItemType Directory -Force "$HOME\.omp\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.omp\skills\"
+
+# 6. DeepSeek Harness
+New-Item -ItemType Directory -Force "$HOME\.deepseek\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.deepseek\skills\"
+```
+
+---
+
+### 🔌 Framework Integration Guides
+
+| Agent Framework / Harness | Standard Skills Path | Discovery & Invocation Mechanism |
+|---|---|---|
+| **OpenAI Codex CLI** | `~/.codex/skills/` (Global) or `.codex/skills/` (Project) | Automatically indexes directories containing `SKILL.md`. Invoked via `$skill-name` or natural language prompt matching. |
+| **Claude Code** | `~/.claude/skills/` (Global) or `.claude/skills/` (Project) | Auto-discovered on `claude` startup. Directly triggerable via slash commands (`/skill-name`) or intent triggers. |
+| **Hermes Agent** | `~/.hermes/skills/` (Global) | Discovered as native skills in the Hermes environment. Subagents invoke skills via standard tool calls. |
+| **Pi Agent** | `~/.pi/skills/` (Global) or `.pi/skills/` (Project) | The Pi harness scans for skill manifests and routes user prompts to appropriate skills. |
+| **OMP (Open Multi-Processing)** | `~/.omp/skills/` (Global) | OMP resolves skills directly through `skill://<name>`. Fully supports multi-agent wave delegation. |
+| **DeepSeek Harness** | `~/.deepseek/skills/` (Global) or `.deepseek/skills/` (Project) | DeepSeek agent harness loads skills from the designated registry folder. |
+| **VS Code / Cursor / Trae** | `.agents/skills/` or workspace root | Configure agent workspace context to point to the `skills/` folder. |
+
+### 💡 Symlink Setup (Recommended for Git Pull Updates)
+Instead of copying, you can create a symlink so that `git pull` automatically updates your agent's skills in place:
+```bash
+# For Claude Code:
+ln -s "$(pwd)/skills" ~/.claude/skills/anchor-research
+
+# For Codex CLI:
+ln -s "$(pwd)/skills" ~/.codex/skills/anchor-research
+
+# For OMP:
+ln -s "$(pwd)/skills" ~/.omp/skills/anchor-research
+```
+
+---
+
+### 💬 Triggers & Usage Examples
+- **Refine an Idea**: `refine my approach: <problem description>` or `提出研究方案`
 - **Literature Review**: `literature review topic: "Flow Matching for 3D Animation"`
 - **Plan Experiments**: `experiment plan: design ablation matrix for our method`
-- **Run Experiments**: `run experiment` (automatically identifies next approved `TODO` run)
+- **Run Experiments**: `run experiment` (automatically identifies the next approved `TODO` run)
 - **Check Training**: `check training run: <run_id> metrics: loss, eval_acc`
 - **Plan Paper**: `paper plan: audit experiment results and outline the paper`
 - **Draft Paper**: `write paper: compile ICLR 2026 conference paper`
 - **Make Poster**: `make poster: create A0 conference poster and talk script`
-
 ---
 
 ## 📜 Repository Structure

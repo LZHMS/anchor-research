@@ -280,21 +280,97 @@ Anchor Research 将整个科研链路划分为 5 大协同层级，统一由顶�
 
 ---
 
-## 🛠️ 使用方式与环境兼容
+## 🛠️ 安装方法与 Agent 框架集成指南
 
-Anchor Research 所有技能均为**宿主中立（Host-Neutral）**设计，全面兼容任何支持工具/技能调用的 AI Agent 环境：
+Anchor Research 技能集是**完全宿主中立的 Markdown 规范文件**（`SKILL.md`）。不需要任何专有的平台插件，不需要额外的运行时守护进程，更无商业框架绑定。**在各大 Agent Harness 环境中的安装极其简单，直接拷贝或建立软链接（Symlink）即可。**
 
-### Claude Code / Anthropic Agent
-在项目根目录创建软链接或复制 `skills/` 目录到 `.claude/skills/`：
+### ⚡ 快速开始：一键复制安装
+
+首先克隆本仓库到本地环境：
 ```bash
-ln -s /path/to/anchor-research/skills ~/.claude/skills/anchor-research
+git clone https://github.com/LZHMS/anchor-research.git
+cd anchor-research
 ```
 
-### VS Code Copilot / 通用 Agent 运行时
-将工作区配置指向 `skills/` 目录，或按需加载具体技能的 `SKILL.md`。
+#### macOS / Linux（Bash）
+```bash
+# 1. OpenAI Codex CLI
+mkdir -p ~/.codex/skills && cp -r skills/* ~/.codex/skills/
 
-### 常用触发词调用示例：
-- **方案打磨**：`refine my approach: <问题描述>` 或 `打磨idea`
+# 2. Claude Code
+mkdir -p ~/.claude/skills && cp -r skills/* ~/.claude/skills/
+
+# 3. Hermes Agent
+mkdir -p ~/.hermes/skills && cp -r skills/* ~/.hermes/skills/
+
+# 4. Pi Agent
+mkdir -p ~/.pi/skills && cp -r skills/* ~/.pi/skills/
+
+# 5. OMP
+mkdir -p ~/.omp/skills && cp -r skills/* ~/.omp/skills/
+
+# 6. DeepSeek Harness
+mkdir -p ~/.deepseek/skills && cp -r skills/* ~/.deepseek/skills/
+```
+
+#### Windows（PowerShell）
+```powershell
+# 1. OpenAI Codex CLI
+New-Item -ItemType Directory -Force "$HOME\.codex\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.codex\skills\"
+
+# 2. Claude Code
+New-Item -ItemType Directory -Force "$HOME\.claude\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.claude\skills\"
+
+# 3. Hermes Agent
+New-Item -ItemType Directory -Force "$HOME\.hermes\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.hermes\skills\"
+
+# 4. Pi Agent
+New-Item -ItemType Directory -Force "$HOME\.pi\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.pi\skills\"
+
+# 5. OMP
+New-Item -ItemType Directory -Force "$HOME\.omp\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.omp\skills\"
+
+# 6. DeepSeek Harness
+New-Item -ItemType Directory -Force "$HOME\.deepseek\skills"
+Copy-Item -Recurse -Force skills\* "$HOME\.deepseek\skills\"
+```
+
+---
+
+### 🔌 常见 Agent 框架路径一览
+
+| Agent 框架 / 运行环境 | 标准 Skills 安装目录 | 自动发现与调用机制 |
+|---|---|---|
+| **OpenAI Codex CLI** | `~/.codex/skills/`（全局）或 `.codex/skills/`（项目） | 自动扫描包含 `SKILL.md` 的子目录。通过 `$skill-name` 或自然语言提示触发。 |
+| **Claude Code** | `~/.claude/skills/`（全局）或 `.claude/skills/`（项目） | 启动 `claude` 时自动加载。通过斜杜命令（`/skill-name`）或意图匹配调用。 |
+| **Hermes Agent** | `~/.hermes/skills/`（全局） | 作为原生技能加载。子代理可通过标准工具调用直接执行。 |
+| **Pi Agent** | `~/.pi/skills/`（全局）或 `.pi/skills/`（项目） | 自动索引所有技能目录，根据用户意图进行路由匹配。 |
+| **OMP** | `~/.omp/skills/`（全局） | 原生支持 `skill://<name>` 寻址与多 Agent DAG 任务分工。 |
+| **DeepSeek Harness** | `~/.deepseek/skills/`（全局）或 `.deepseek/skills/`（项目） | DeepSeek 智能体框架从指定技能注册目录载入。 |
+| **VS Code / Cursor / Trae** | `.agents/skills/` 或工作区根目录 | 将工作区上下文或规则配置包含 `skills/` 目录即可。 |
+
+### 💡 软链接安装（推荐：随 Git 同步自动更新）
+开发或追踪更新时，推荐创建符号链接，后续在仓库执行 `git pull` 即可自动保持本地环境技能为最新：
+```bash
+# Claude Code 示例：
+ln -s "$(pwd)/skills" ~/.claude/skills/anchor-research
+
+# Codex CLI 示例：
+ln -s "$(pwd)/skills" ~/.codex/skills/anchor-research
+
+# OMP 示例：
+ln -s "$(pwd)/skills" ~/.omp/skills/anchor-research
+```
+
+---
+
+### 💬 常用触发词调用示例
+- **方案打磨**：`refine my approach: <问题描述>` 或 `提出研究方案`、`打磨idea`
 - **文献调研**：`literature review topic: "Flow Matching for 3D Animation"`
 - **实验规划**：`experiment plan: 设计核心消融实验路线`
 - **执行实验**：`run experiment`（自动选取已批准就绪的下一个 `TODO` 任务）
@@ -302,7 +378,6 @@ ln -s /path/to/anchor-research/skills ~/.claude/skills/anchor-research
 - **论文规划与制图**：`paper plan: 审计实验数据并规划论文大纲与图表`
 - **论文手稿写作**：`write paper: 按照 ICLR 2026 模板撰写论文`
 - **展示海报制作**：`make poster: 制作 A0 展板与演讲脚本`
-
 ---
 
 ## 📜 仓库完整目录结构
