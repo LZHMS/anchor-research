@@ -1,12 +1,16 @@
 ---
 name: research-daily-ideas
-description: "Daily paper discovery pipeline: find today's newest arXiv papers matching a given topic OR the user's Zotero research interests (with configurable count), download each paper's LaTeX source + figures, write a deep per-paper Chinese analysis with embedded figures, ingest every analysis into the PKBase knowledge base, and finally synthesize research ideas for the day's topic grounded in both the new papers and existing PKBase knowledge. Use when the user asks for 今日论文, daily ideas, today's papers, 今天有什么新论文, arxiv daily, 从 Zotero 兴趣出发推荐新论文, or wants recent papers ranked by semantic similarity with analysis and knowledge-base ingestion."
+description: "Optional daily discovery feeder: find recent arXiv papers matching a topic or Zotero interests, rank them with bundled scripts, download sources and figures, and write deep Chinese analyses and exploratory ideas. Permanent PKBase ingestion/query filing requires an explicit write scope. Daily outputs do not adopt a main-path candidate, approve a research proposal, or automatically enter the literature-review → summary → ideas workflow. Use for 今日论文, daily ideas, today's papers, 今天有什么新论文, arxiv daily, or recent papers ranked by semantic similarity."
 argument-hint: "topic: '3D Facial Animation' | top_k: 20 | date: 2026-08-24 | pkbase: D:\\notes\\MyPKBase"
+version: 1.1.0
+metadata:
+  category: research
+  related_skills: [research-literature-review, research-literature-summary, research-ideas, wiki-pk-base]
 ---
 
 # Daily Idea
 
-One-shot daily research pipeline that compounds over time:
+Optional one-shot daily discovery, analysis and exploratory-idea utility:
 
 ```
 topic / Zotero interests ──▶ ranked papers ──▶ downloaded sources ──▶ per-paper analysis
@@ -17,9 +21,53 @@ topic / Zotero interests ──▶ ranked papers ──▶ downloaded sources �
 ```
 
 **Division of labor:** deterministic work (fetch, rank, download, convert) is done by bundled
-scripts; judgment work (writing the analysis, filing into PKBase, generating ideas) is done by
-the agent. The PKBase is the long-term memory — every run makes it richer, and later runs
-produce better ideas because they read what earlier runs filed.
+scripts; judgment work (analysis, optional scoped filing, exploratory ideas) is done by
+the agent. PKBase can provide long-term memory, but discovery alone does not authorize
+adding permanent pages. The diagram shows available operations, not automatic permission.
+
+## Scope and main-path boundary
+
+Follow the [shared human-anchor contract](../research-shared-references/anchor-gates.md); the
+following inline limits apply even when that file is unavailable. This utility is
+optional, not a prerequisite or replacement for any main research stage. Preserve the
+fetch/ranking/source-download algorithms below. A request for daily papers authorizes
+that discovery/analysis scope; producing exploratory ideas when requested does not
+select a `research-ideas` candidate, approve a problem/proposal, or approve a corpus/
+completed evidence landscape.
+
+Resolve and read only the requested source/base scope. A known PKBase path, existing
+directory or new local analysis is not write consent. Before Step 5 or permanent Step 6
+query filing, require an explicit request to file the specified papers/ideas into the
+selected instance, or present the actual destination, selected artifacts and navigation/
+taxonomy/site changes and wait for acceptance. A request explicitly covering that
+concrete scope need not be asked twice. Refusal leaves local outputs intact; silence,
+timeout and autonomous mode never authorize filing. A discovery-only invocation does
+not require PKBase initialization: if no base is available/authorized, skip base reads
+and filing and disclose that PKBase-grounded ideas could not be produced. Never invent
+existing-knowledge context. When the user separately requests the full daily pipeline,
+report exactly which discovery, analysis, idea and filing operations that scope covered;
+do not call it completion of the main research path.
+
+After presenting real outputs, the only default main-path entry to offer is the
+[literature-review skill](../research-literature-review/SKILL.md). Offer at most one
+conversation `NEXT_SKILL_HANDOFF` with `from_skill: research-daily-ideas`,
+`to_skill: research-literature-review`, actual `project_root`/`docs_root`, a fully
+resolved chat `invocation`, exact proposed topic/overview/source scope, and
+`artifacts: [{role,path,sha256}]` for every selected daily/PKBase input actually consumed,
+with `status: awaiting_confirmation`. Show the actual command, chosen feeder material
+and decision; do not silently nominate an exploratory idea as the user's research
+problem. Review will normalize and evaluate those inputs under its own corpus gate.
+The offer is allowed only after the user has identified the feeder scope; otherwise
+describe the available review route without manufacturing a live bound offer.
+
+Unique assent accepts that exact offer once; refusal sets `declined` and stops, changed
+paths/bytes/scope set `stale` and require refreshed confirmation. Revalidate actual
+artifacts before setting `running`; mark `completed` only for the authorized stage's
+actual completion, or `failed` on failure. Never cascade daily completion into review,
+summary or ideas execution. A separate explicit invocation of summary or ideas is
+handled by that receiver's real producer-approval/equivalent-import-adoption gate;
+daily filenames are not fabricated upstream history or automatic main-stage adoption.
+
 
 ## Constants
 
@@ -45,14 +93,15 @@ produce better ideas because they read what earlier runs filed.
 
 ## Step 0 — Orient (every run, before anything else)
 
-1. **Resolve `PKBASE_PATH`**: explicit `pkbase:` argument → `$PKBASE_PATH` env var → ask the
-   user (and suggest also setting the env var for future runs) → `~/PKBase`.
-   Confirm the PKBase exists at the resolved path. Read `SCHEMA.md` (domains, topics, depth
-   level, tag taxonomy, bilingual setting), `index.md`, and the last ~20 entries of `log.md`.
-   This is what step 5 uses for domain/topic classification, tags, and cross-linking, and what
-   step 6 reads as the "existing knowledge" base.
-2. If the PKBase does not exist, stop and tell the user to run the `wiki-pk-base` skill's
-   `init` first — this skill does not create PKBase.
+1. **Resolve `PKBASE_PATH` only for requested PKBase context or filing**: explicit `pkbase:`
+   argument → `$PKBASE_PATH` env var → ask the user (suggest setting the env var for future
+   runs) → `~/PKBase`. Verify an actual accessible instance. Read `SCHEMA.md`, `index.md`
+   and the last ~20 entries of `log.md` only within authorized read scope. Those supply
+   taxonomy/cross-links for Step 5 and existing-knowledge context for Step 6.
+2. If the base is unavailable, do not create it or substitute another instance. Continue
+   authorized daily discovery/analysis locally; if the user requested filing or
+   PKBase-grounded ideas, report that prerequisite and offer a separately requested
+   `wiki-pk-base init`. A discovered path alone never permits Step 5 writes.
 3. Check Python deps for the scripts (see `requirements.txt`):
    `pip install pyyaml sentence-transformers numpy requests PyMuPDF pypdf`
    Missing `sentence-transformers` blocks step 2; missing `PyMuPDF` only degrades figure
@@ -265,12 +314,13 @@ domain/topic from step 0; if genuinely new, note it for step 5 to register in SC
 `quality_score` (1-10) follows the rubric in
 [references/paper-analysis.md](./references/paper-analysis.md).
 
-## Step 5 — Ingest analyses into PKBase
+## Step 5 — Ingest analyses into PKBase (optional, explicit write scope)
 
-File every analyzed paper into the PKBase **using the existing page types — no new structure
-is needed**: each paper is a *source*, its figures are *assets*, its durable knowledge becomes
-*concept* pages. Follow `wiki-pk-base` conventions exactly (see
-[references/pkbase-integration.md](./references/pkbase-integration.md) for the per-paper recipe).
+Only after the scope gate above, file the explicitly selected analyzed papers using
+the existing page types — no new structure is needed: each paper is a *source*, its
+figures are *assets*, its durable knowledge becomes *concept* pages. Follow `wiki-pk-base`
+conventions exactly (see [references/pkbase-integration.md](./references/pkbase-integration.md)
+for the per-paper recipe). Otherwise keep local analysis outputs and skip this step.
 
 Per paper (using `domain`/`topic` from step 4):
 1. **Raw (immutable):** copy `paper.pdf` →
@@ -309,6 +359,10 @@ Synthesize research ideas grounded in **three** inputs:
 3. the user's own interest signals (corpus `matched_corpus` neighbors, annotations/notes from
    step 1 when present).
 
+Run this exploratory-idea scope only when requested. If PKBase context is unavailable
+or not authorized, state that limitation and produce only the separately requested
+paper/interest-grounded brainstorm; do not claim three-input PKBase-grounded synthesis.
+
 Produce 3-8 ideas. Each idea must have:
 - **一句话 idea（中文）+ 英文 title**
 - **动机与空白** — what gap in today's papers or the PKBase it targets, citing specific
@@ -318,7 +372,8 @@ Produce 3-8 ideas. Each idea must have:
   assets could be reused
 - **与已有知识的衔接** — which existing PKBase concepts it extends, and which it would create
 
-Write the ideas as a **query page** in the PKBase (durable, searchable, cross-linked):
+Save the exploratory ideas locally under `ARTIFACTS/<DATE>/` by default. Only with
+explicit query-page filing scope, write the ideas as a durable PKBase **query page**:
 
 ```
 wiki/queries/<domain>/<topic>/daily-<DATE>-<topic-slug>.md
@@ -352,7 +407,8 @@ run report (counts per step, paths, site rebuild line).
   `ARTIFACTS/` dir, never an unconverted PDF/EPS).
 - Ideas are grounded: every idea cites at least one of (today's paper, PKBase page, user
   interest signal). No generic "apply X to Y" without a stated gap.
-- The site is rebuilt at the end of the run — a PKBase site that lags the vault is a bug.
+- After authorized PKBase writes, rebuild the site; with no writes, do not claim a
+  filing or rebuild. Report real skipped/requested scope separately from completed work.
 
 ## Bundled assets
 
@@ -363,3 +419,10 @@ run report (counts per step, paths, site rebuild line).
 - [references/pkbase-integration.md](./references/pkbase-integration.md) — step 5 per-paper filing recipe + site rebuild checklist
 - [references/research-ideas.md](./references/research-ideas.md) — step 6 idea taxonomy and quality rubric
 - [requirements.txt](./requirements.txt) — Python dependencies
+
+## Changes in 1.1.0
+
+- Made daily discovery an explicit optional feeder, with one-use literature-review
+  handoffs and no automatic main-stage/candidate adoption or permanent PKBase filing.
+- Preserved discovery weighting, ranking, date-window rules, download/figure algorithms,
+  bundled scripts/CLI and PKBase asset conventions; only scope and adjacency changed.

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>PKBase · 知识库导航</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-web/lxgwwenkaigbscreen/result.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* academic-homepage subset — same design language as web-template/style.css */
+:root {
+    --pk-bg: #f8f9fa;
+    --pk-text: #212529;
+    --pk-text-2: #495057;
+    --pk-muted: #6c757d;
+    --pk-link: #3f7fb7;
+    --pk-link-hover: #3e92db;
+    --pk-border: #dee2e6;
+    --pk-border-light: #e9ecef;
+    --pk-card-radius: 0.8rem;
+    --pk-shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.075);
+    --pk-navbar-h: 56px;
+    --pk-maxw: 1100px;
+    --pk-mono: Consolas, 'Courier New', monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    background: var(--pk-bg);
+    color: var(--pk-text);
+    font-family: Lato, 'LXGW WenKai GB Screen', 'Noto Sans SC', -apple-system, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    padding-top: 5rem;
+}
+a { color: var(--pk-link); text-decoration: none; }
+a:hover { color: var(--pk-link-hover); text-decoration: underline; }
+
+/* ---------- navbar (fixed top, light, shadow-sm) ---------- */
+.pk-navbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--pk-navbar-h);
+    background: rgba(248, 249, 250, 0.95);
+    box-shadow: var(--pk-shadow-sm);
+    z-index: 100;
+    display: flex; align-items: center;
+}
+.pk-container { max-width: var(--pk-maxw); margin: 0 auto; padding: 0 1.5rem; width: 100%; }
+.pk-navbar .pk-container { display: flex; align-items: center; gap: 16px; }
+.pk-brand { font-size: 20px; font-weight: 900; color: var(--pk-text); }
+.pk-brand:hover { color: var(--pk-link); text-decoration: none; }
+.pk-nav { margin-left: auto; font-size: 14px; color: var(--pk-muted); }
+
+/* ---------- page ---------- */
+main.pk-container { padding-top: 1.5rem; padding-bottom: 3rem; }
+.section-title {
+    font-size: 20px; font-weight: 700; color: var(--pk-text);
+    margin: 1.5rem 0 0.25rem; padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--pk-border);
+}
+.note { color: var(--pk-text-2); font-size: 14.5px; margin: 0.75rem 0 1.25rem; }
+
+/* instance cards */
+.pk-bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+.pk-base-card {
+    display: flex; flex-direction: column; gap: 0.4rem;
+    background: #fff; border-radius: var(--pk-card-radius);
+    box-shadow: var(--pk-shadow-sm);
+    padding: 1.4rem 1.5rem;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.pk-base-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+    text-decoration: none;
+}
+.pk-base-name {
+    font-size: 1.3rem; font-weight: 700; color: var(--pk-text);
+    display: flex; align-items: center; gap: 0.6rem;
+}
+.pk-base-name i { color: var(--pk-link); font-size: 18px; width: 24px; text-align: center; }
+.pk-base-card:hover .pk-base-name { color: var(--pk-link); }
+.pk-base-desc { color: var(--pk-text-2); font-size: 14.5px; flex: 1; }
+.pk-base-meta { font-family: var(--pk-mono); font-size: 12.5px; color: var(--pk-muted); }
+.pk-base-meta i { font-family: inherit; margin-right: 4px; }
+
+.pk-footer { text-align: center; color: var(--pk-muted); font-size: 13px; padding: 2rem 1.5rem 2.5rem; }
+</style>
+</head>
+<body>
+
+<nav class="pk-navbar">
+  <div class="pk-container">
+    <a class="pk-brand" href="index.html">PKBase</a>
+    <div class="pk-nav">知识库实例导航 · Instance Navigator</div>
+  </div>
+</nav>
+
+<main class="pk-container">
+  <h5 class="section-title">知识库实例</h5>
+  <p class="note">每个实例都是一个独立、自包含的 PKBase（自己的 SCHEMA、raw、wiki 与站点），实例之间互不交叉。点击下方卡片进入对应实例的网站。</p>
+
+  <div class="pk-bases">
+    <!-- BASES:BEGIN — agent regenerates everything between these markers: one card per instance
+         directory under the root, card = name + SCHEMA.md description + link to <instance>/site/index.html.
+         Rebuild the whole block from the current directory listing; never patch it incrementally. -->
+    <a class="pk-base-card" href="ProBase/site/index.html">
+      <span class="pk-base-name"><i class="fa-solid fa-flask"></i>ProBase</span>
+      <span class="pk-base-desc">专业知识库：多模态生成、AI agent 研究笔记</span>
+      <span class="pk-base-meta"><i class="fa-regular fa-folder-open"></i>ProBase/</span>
+    </a>
+    <a class="pk-base-card" href="LifeBase/site/index.html">
+      <span class="pk-base-name"><i class="fa-solid fa-house"></i>LifeBase</span>
+      <span class="pk-base-desc">生活知识库：旅行、健康、日常事务</span>
+      <span class="pk-base-meta"><i class="fa-regular fa-folder-open"></i>LifeBase/</span>
+    </a>
+    <!-- BASES:END -->
+  </div>
+</main>
+
+<div class="pk-footer">PKBase · 由 wiki-pk-base 技能维护 · 实例创建 / 删除时本页由 agent 重新生成</div>
+
+</body>
+</html>

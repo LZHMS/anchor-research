@@ -1,0 +1,14 @@
+# Core runtime and direct imports in base/ and utils/.
+# Select the appropriate CPU/CUDA PyTorch wheel for your platform.
+torch>=2.6
+numpy
+Pillow
+yacs
+PyYAML
+loguru
+tensorboard
+tabulate
+gdown
+six
+# Optional integrations (wandb, audio/transformers, rendering, etc.) require
+# their own dependencies only when explicitly imported by a consumer module.

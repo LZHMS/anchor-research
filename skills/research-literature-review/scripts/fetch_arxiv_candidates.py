@@ -163,8 +163,8 @@ def main() -> None:
     parser.add_argument("--config", default=None, help="Optional YAML config path")
     parser.add_argument(
         "--output",
-        default="artifacts/arxiv_candidates.json",
-        help="Output candidate JSON path",
+        required=True,
+        help="Explicit output path supplied by the calling skill (use its project docs run directory)",
     )
     parser.add_argument("--days", type=int, default=None, help="Look-back window for fetched papers")
     parser.add_argument("--max-candidates", type=int, default=None, help="Max results fetched per category")

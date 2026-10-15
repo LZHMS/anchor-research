@@ -1,105 +1,31 @@
 # LaTeX Templates for ML/AI Conferences
 
-This directory contains official LaTeX templates for major machine learning and AI conferences.
+This directory contains bundled LaTeX resources for several ML/AI venues. Inspect the actual venue/year/track instructions before selecting one; a historical template or page-limit table is not evidence of current compliance. Explicit supplied current templates take precedence.
 
 ---
 
-## Compiling LaTeX to PDF
+## Host-neutral compilation
 
-### Option 1: VS Code with LaTeX Workshop (Recommended)
+No editor, online service, package manager or agent framework is required. Use an available compiler appropriate to the selected template in the manuscript output workspace (default `DOCS_ROOT/research-paper-writing`), not inside this installed template directory. Inspect template instructions, licenses and build scripts before use; copy only required resources and preserve user assets.
 
-**Setup:**
-1. Install [TeX Live](https://www.tug.org/texlive/) (full distribution recommended)
-   - macOS: `brew install --cask mactex`
-   - Ubuntu: `sudo apt install texlive-full`
-   - Windows: Download from [tug.org/texlive](https://www.tug.org/texlive/)
+Examples, only when the actual installed engine and template support them:
 
-2. Install VS Code extension: **LaTeX Workshop** by James Yu
-   - Open VS Code → Extensions (Cmd/Ctrl+Shift+X) → Search "LaTeX Workshop" → Install
-
-**Usage:**
-- Open any `.tex` file in VS Code
-- Save the file (Cmd/Ctrl+S) → Auto-compiles to PDF
-- Click the green play button or use `Cmd/Ctrl+Alt+B` to build
-- View PDF: Click "View LaTeX PDF" icon or `Cmd/Ctrl+Alt+V`
-- Side-by-side view: `Cmd/Ctrl+Alt+V` then drag tab
-
-**Settings** (add to VS Code `settings.json`):
-```json
-{
-  "latex-workshop.latex.autoBuild.run": "onSave",
-  "latex-workshop.view.pdf.viewer": "tab",
-  "latex-workshop.latex.recipes": [
-    {
-      "name": "pdflatex → bibtex → pdflatex × 2",
-      "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"]
-    }
-  ]
-}
+```sh
+latexmk -pdf main.tex
 ```
 
-### Option 2: Command Line
+Or, for a template requiring the traditional bibliography sequence:
 
-```bash
-# Basic compilation
-pdflatex main.tex
-
-# With bibliography (full workflow)
+```sh
 pdflatex main.tex
 bibtex main
 pdflatex main.tex
 pdflatex main.tex
-
-# Using latexmk (handles dependencies automatically)
-latexmk -pdf main.tex
-
-# Continuous compilation (watches for changes)
-latexmk -pdf -pvc main.tex
 ```
 
-### Option 3: Overleaf (Online)
+Other templates may require a different engine or bibliography processor. Do not assume availability, enable shell escape, install packages automatically, change global environments or upload sources to obtain a build. Missing tools/packages are explicit blockers; ask for authorized environment provisioning separately.
 
-1. Go to [overleaf.com](https://www.overleaf.com)
-2. New Project → Upload Project → Upload the template folder as ZIP
-3. Edit online with real-time PDF preview
-4. No local installation needed
-
-### Option 4: Other IDEs
-
-| IDE | Extension/Plugin | Notes |
-|-----|------------------|-------|
-| **Cursor** | LaTeX Workshop | Same as VS Code |
-| **Sublime Text** | LaTeXTools | Popular, well-maintained |
-| **Vim/Neovim** | VimTeX | Powerful, keyboard-driven |
-| **Emacs** | AUCTeX | Comprehensive LaTeX environment |
-| **TeXstudio** | Built-in | Dedicated LaTeX IDE |
-| **Texmaker** | Built-in | Cross-platform LaTeX editor |
-
-### Troubleshooting Compilation
-
-**"File not found" errors:**
-```bash
-# Ensure you're in the template directory
-cd templates/icml2026
-pdflatex example_paper.tex
-```
-
-**Bibliography not appearing:**
-```bash
-# Run bibtex after first pdflatex
-pdflatex main.tex
-bibtex main        # Uses main.aux to find citations
-pdflatex main.tex  # Incorporates bibliography
-pdflatex main.tex  # Resolves references
-```
-
-**Missing packages:**
-```bash
-# TeX Live package manager
-tlmgr install <package-name>
-
-# Or install full distribution to avoid this
-```
+Record the real command, cwd, engine/version, actual input hashes, exit code, complete log and final PDF digest in the manuscript build manifest. Check citations, cross-references, assets, page constraints and rendered output; command success alone is insufficient. Any input change invalidates the previous build correspondence. Failed/unavailable compilation cannot produce ready state or a poster offer. See the parent skill for the complete manifest/state and independent-review contracts.
 
 ---
 
@@ -199,7 +125,7 @@ Key files:
 - `colm2025_conference.sty` - Style file
 - `colm2025_conference.bst` - Bibliography style
 
-## Page Limits Summary
+## Historical Page Limits Summary — Verify Current Requirements
 
 | Conference | Submission | Camera-Ready | Notes |
 |------------|-----------|--------------|-------|
@@ -214,9 +140,9 @@ Key files:
 
 ### Compilation Errors
 
-1. **Missing packages**: Install full TeX distribution (TeX Live Full or MikTeX)
-2. **Bibliography errors**: Use the provided `.bst` file with `\bibliographystyle{}`
-3. **Font warnings**: Install `cm-super` or use `\usepackage{lmodern}`
+1. **Missing packages/fonts**: Record the exact unavailable dependency and stop the affected build; do not automatically install or change the global environment.
+2. **Bibliography errors**: Inspect the actual template's required processor/style and supplied bibliography resources.
+3. **Font warnings**: Determine whether the output substituted fonts and whether it meets the actual template requirements; do not claim a checked final PDF without inspection.
 
 ### Anonymization
 

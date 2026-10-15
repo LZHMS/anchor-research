@@ -1,6 +1,6 @@
 # Citation Management & Hallucination Prevention
 
-This reference provides a complete workflow for managing citations programmatically, preventing AI-generated citation hallucinations, and maintaining clean bibliographies.
+Verify citation identities, metadata and actual claim support using supplied source documents or available authoritative records. The service-specific examples below are optional historical implementation aids, not required APIs, packages, accounts or permission to search for new evidence. In manuscript writing, keep the approved citation selection fixed, record verification provenance, and block unresolved citations. Never automatically install clients or subscribe to services.
 
 ---
 
@@ -38,7 +38,7 @@ Research has documented significant issues with AI-generated citations:
 
 ### Solution
 
-**Never generate citations from memory—always verify programmatically.**
+**Never generate citations from memory—verify against genuine source material and authoritative metadata. Programmatic retrieval is optional, not a host requirement.**
 
 ---
 
@@ -64,7 +64,7 @@ Need open data, bulk access? → OpenAlex
 
 ### No Official Google Scholar API
 
-Google Scholar has no official API. Scraping violates ToS. Use SerpApi ($75-275/month) only if Semantic Scholar coverage is insufficient.
+No particular search service, paid subscription or scraping method is required. Use authorized available capabilities and respect source access restrictions.
 
 ---
 
@@ -73,20 +73,20 @@ Google Scholar has no official API. Scraping violates ToS. Use SerpApi ($75-275/
 ### 5-Step Process
 
 ```
-1. SEARCH → Query Semantic Scholar with specific keywords
+1. IDENTIFY → Resolve the already approved citation and its stable identifier
      ↓
-2. VERIFY → Confirm paper exists in 2+ sources
+2. VERIFY → Check identity and metadata against authoritative available records
      ↓
-3. RETRIEVE → Get BibTeX via DOI content negotiation
+3. RETRIEVE → Obtain genuine bibliographic metadata, without inventing fields
      ↓
-4. VALIDATE → Confirm the claim appears in source
+4. VALIDATE → Confirm the cited claim appears in the actual source
      ↓
-5. ADD → Add verified entry to .bib file
+5. ADD → Add verified entry and record its provenance
 ```
 
 ### Step 1: Search
 
-Use Semantic Scholar for ML/AI papers:
+Optional service-client example (not required for the workflow):
 
 ```python
 from semanticscholar import SemanticScholar
@@ -229,7 +229,7 @@ from dataclasses import dataclass
 try:
     from semanticscholar import SemanticScholar
 except ImportError:
-    print("Install: pip install semanticscholar")
+    print("Optional citation client unavailable; use supplied authoritative records or report the verification blocker.")
     SemanticScholar = None
 
 @dataclass

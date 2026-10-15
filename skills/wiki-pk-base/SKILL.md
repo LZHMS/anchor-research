@@ -1,17 +1,19 @@
 ---
 name: wiki-pk-base
-description: "Build and maintain a personal knowledge base (PKBase) as interlinked markdown — an Obsidian-friendly vault — plus a static web showcase (site/) rebuilt from the vault after every operation. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files) into it, query/ask questions about it, lint/audit/health-check it, or view/preview the wiki as a website. Triggers on words like 'wiki', 'knowledge base', 'PKBase', 'ingest', 'add this source', 'my notes', 'view my wiki', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
-version: 1.2.0
+description: "Build and maintain personal knowledge bases (PKBases) as interlinked markdown — Obsidian-friendly vaults — plus a static web showcase (site/) per base rebuilt after every operation. PKBase is a *type*: each named instance (e.g. ProBase for professional knowledge, LifeBase for life) is a fully independent PKBase under a shared root (~/PKBase/<instance>), addressed by its own env var (PROBASE_PATH, LIFEBASE_PATH); the root index.html navigates between instances. Use when the user wants to create/start a knowledge base or wiki, add or ingest a source (URL, PDF, pasted text, or a whole folder of files), query/ask questions about it, lint/audit/health-check it, or view/preview it as a website. Triggers on words like 'wiki', 'knowledge base', 'PKBase', an instance name (e.g. 'ProBase', 'LifeBase'), 'ingest', 'add this source', 'my notes', 'view my wiki', or a question when an existing wiki is present. Unlike RAG, it compiles knowledge once into a persistent, cross-referenced vault that compounds over time."
+version: 1.4.0
 author: Zhihao Li
 license: MIT
 metadata:
   tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative, obsidian]
   category: research
-  related_skills: [pdf, obsidian, agentic-research-ideas]
+  related_skills: [pdf, obsidian, research-literature-review, research-literature-summary, research-daily-ideas, research-ideas]
   operations: [init, process, add, ingest, query, lint]
   config:
-    path_env: PKBASE_PATH
-    path_default: "~/PKBase"
+    root_env: PKBASE_ROOT
+    root_default: "~/PKBase"
+    instance_env: "<INSTANCE>_PATH — instance name uppercased, spaces/hyphens as underscores (e.g. PROBASE_PATH, LIFEBASE_PATH)"
+    instance_default: "<root>/<instance name>"
     depth_level: "stored in SCHEMA.md (100 | 300 | 500)"
 ---
 
@@ -22,33 +24,97 @@ Build and maintain a persistent, compounding knowledge base as interlinked markd
 Unlike traditional RAG (which rediscovers knowledge from scratch per query), the wiki compiles knowledge once and keeps it current. Cross-references are already there.
 Contradictions have already been flagged. Synthesis reflects everything ingested.
 
+**PKBase is a type, not a name.** Each knowledge base the user creates is a *named instance* of this pattern — e.g. `ProBase` (professional knowledge), `LifeBase` (life & personal topics) — a complete, self-contained PKBase of its own. All instances share one root folder (`~/PKBase/`) that exists purely for file management: every instance is independent (its own SCHEMA, index, log, raw material, wiki, and web site) and instances never cross-reference each other. See `## PKBase Config (root + instances)`.
+
 **Division of labor:** The human curates sources and directs analysis. The agent summarizes, cross-references, files, and maintains consistency.
 
 ## When This Skill Activates
 
 Use this skill when the user:
 - Asks to create, build, or start a wiki or knowledge base
+- Names one of their knowledge base instances (e.g. "my ProBase", "add this to LifeBase")
 - Asks to ingest, add, or process a source — or a whole folder of files — into their wiki
 - Asks a question and an existing wiki is present at the configured path
 - Asks to lint, audit, or health-check their wiki
 - References their wiki, knowledge base, or "notes" in a research context
 
-## PKBase Config
+## Research feeder and permission boundary
 
-- **Location:** Set via `PKBASE_PATH` environment variable, or specify the path directly in the conversation. If unset, defaults to `~/PKBase`:
+PKBase is an optional source/destination utility, not a mandatory research stage.
+Use the [shared human-anchor contract](../research-shared-references/anchor-gates.md) when joining
+the research path; these inline boundaries remain binding if the shared file is absent.
+Metadata links identify available skills, not an instruction to invoke them.
+
+An explicit `add`/`ingest` request authorizes the specified source/instance filing
+scope, subject to the operation's existing confirmation rules. A query, configured
+instance, discovered directory, read access or returned page does not by itself grant
+permanent filing, new-source access or any main-stage/candidate adoption. Before
+filing results not already covered by the user's request, show the exact destination,
+selected artifacts and page/index/log/taxonomy/site changes and obtain explicit scope
+acceptance. Preserve user assets and instance resolution/isolation rules below; do not
+create a base, change instances or infer a write scope merely because a path exists.
+
+Return requested query/ingestion results to the caller. If the user wants to develop
+them into a research direction, the default main-path entry to offer is
+[research-literature-review](../research-literature-review/SKILL.md), which normalizes
+source material and obtains corpus acceptance before summary. Do not automatically
+run review, [summary](../research-literature-summary/SKILL.md) or
+[ideas](../research-ideas/SKILL.md), and do not label wiki summaries or exploratory
+ideas as approved upstream outputs. Separately requested summary/ideas entry must meet
+that receiver's producer-approval or genuine equivalent-input-adoption gate; never
+fabricate corpus/summary history from a page's existence.
+
+For a known, user-identified feeder scope, offer at most one bare conversation
+`NEXT_SKILL_HANDOFF`: `from_skill: wiki-pk-base`, `to_skill:
+research-literature-review`, actual `project_root`, `docs_root`, fully resolved chat
+`invocation`, exact topic/overview and authorized source scope,
+`artifacts: [{role,path,sha256}]` enumerating every selected consumed page/raw/control
+file, and `status: awaiting_confirmation`. Show the actual command and what acceptance
+permits, then wait. If no concrete scope is known, describe that route rather than
+manufacturing a live offer. A unique unambiguous assent accepts once; refusal sets
+`declined` and stops; changed files/paths/scope set `stale` and need refreshed acceptance.
+Revalidate before `running`; record `completed` only for actual authorized completion
+or `failed` on failure. Silence, timeout, autonomous mode or an ingestion's completion
+never grants stage entry, output-anchor approval or another permanent write.
+
+**Changes in 1.4.0:** replaced the obsolete ideas metadata link with actual adjacent
+research skills and documented optional feeder/offer/write boundaries. PKBase operation
+algorithms, instance configuration, schemas, templates, scripts and user assets are
+unchanged.
+
+
+## PKBase Config (root + instances)
+
+**PKBase is a type; instances are named.** The user creates instances whose names reflect their purpose — `ProBase` for professional/work knowledge, `LifeBase` for life & personal topics, or any other name — and all of them live under one **root** folder:
+
+```
+~/PKBase/               # root — shared folder, for file management only
+├── index.html          # instance navigator (agent-maintained; links into each instance's site)
+├── ProBase/            # instance — a complete, independent PKBase
+└── LifeBase/           # instance — a complete, independent PKBase
+```
+
+- **Root:** set via the `PKBASE_ROOT` environment variable, or specified directly in the conversation. If unset, defaults to `~/PKBase`.
+- **Instance path:** every instance has its **own environment variable** named after it — instance name uppercased, spaces/hyphens as underscores, suffix `_PATH` (`ProBase` → `PROBASE_PATH`, `LifeBase` → `LIFEBASE_PATH`, `My Research Base` → `MY_RESEARCH_BASE_PATH`). If unset, the instance defaults to `<root>/<instance name>`. Resolve the working instance (`$BASE`) per operation:
 
 ```bash
-PKBASE="${PKBASE_PATH:-$HOME/PKBase}"
+PKBASE_ROOT="${PKBASE_ROOT:-$HOME/PKBase}"
+BASE="${PROBASE_PATH:-$PKBASE_ROOT/ProBase}"    # instance "ProBase"
+# BASE="${LIFEBASE_PATH:-$PKBASE_ROOT/LifeBase}"  # instance "LifeBase"
 ```
 
-- **Depth Level:** Stored inside the PKBase itself (`SCHEMA.md` → `## Configuration`). This keeps the PKBase fully self-contained and portable across any agent framework — no external env config required. Default: `500` (Expert deep-dive) if not specified.
+- **Which instance:** take it from what the user says ("add this to my ProBase"). If exactly one instance directory exists under the root, that is the target. If several exist and the request is ambiguous, list the instances (name + one-line description from each `SCHEMA.md`) and ask. **One operation always targets exactly one instance.**
+- **Independence:** each instance is a complete PKBase — its own `SCHEMA.md`, `index.md`, `log.md`, `raw/`, `wiki/`, `site/`. Instances never share or cross-link pages, raw material, logs, or configuration. The root holds nothing but `index.html` and instance directories.
+- **Depth Level:** stored inside the instance itself (`SCHEMA.md` → `## Configuration`). This keeps the instance fully self-contained and portable across any agent framework — no external env config required. Default: `500` (Expert deep-dive) if not specified.
 
-The PKBase is just a directory of markdown files — open it in Obsidian, VS Code, or any editor. No database, no special tooling required. All configuration lives inside the PKBase directory, so it can be moved, cloned, or synced without losing settings.
+An instance is just a directory of markdown files — open it in Obsidian, VS Code, or any editor. No database, no special tooling required. All configuration lives inside the instance directory, so it can be moved, cloned, or synced without losing settings (only the root `index.html` needs regenerating afterwards — see `## Root Navigator (index.html)`).
 
-## Architecture: Three Layers
+## Architecture: Root + Three Layers per Instance
+
+The root holds all instances side by side (layout in `## PKBase Config (root + instances)`). **Inside every instance** the PKBase is three layers:
 
 ```
-PKBase/                    # Personal Knowledge Base
+ProBase/                   # one PKBase instance (independent; same structure for every instance)
 ├── SCHEMA.md              # Conventions, structure rules, taxonomy, extraction rules
 ├── index.md               # Sectioned content catalog with one-line summaries (the single master index)
 ├── log.md                 # Chronological action log (append-only, rotated to log-YYYY-N-MMfirsttoMMlast.md at 500 entries)
@@ -106,12 +172,12 @@ wiki/
 
 **Layer 3 — The Schema:** `SCHEMA.md` defines structure, conventions, and tag taxonomy.
 
-## Web Site (static showcase)
+## Web Site (per-instance static showcase)
 
-`<PKBase>/site/` is a small self-contained static web site that displays the compiled wiki plus raw material status. It is a **build artifact of the vault**: the agent maintains it, never the user.
+`<BASE>/site/` (one site per instance) is a small self-contained static web site that displays the compiled wiki plus raw material status. It is a **build artifact of the vault**: the agent maintains it, never the user.
 
-- **Origin:** the skill ships a template in `web-template/` (next to this SKILL.md: `index.html`, `style.css`, `app.js`, `data.js`, `README.md`). At **init**, copy the whole folder into `<PKBase>/site/`.
-- **Rebuild rule:** every operation that changes vault state (`init`, `add`, `ingest`, `lint`, and any manual page/raw/log edit) finishes by **regenerating `site/data.js`** from the current vault. The other four files are stable template files — never hand-edit them inside a PKBase (if the skill's `web-template/` is updated, re-copy it and regenerate `data.js`).
+- **Origin:** the skill ships a template in `web-template/` (next to this SKILL.md: `index.html`, `style.css`, `app.js`, `data.js`, `README.md`). At **init**, copy the whole folder into `<BASE>/site/`.
+- **Rebuild rule:** every operation that changes vault state (`init`, `add`, `ingest`, `lint`, and any manual page/raw/log edit) finishes by **regenerating `site/data.js`** from the current vault. The other four files are stable template files — never hand-edit them inside an instance (if the skill's `web-template/` is updated, re-copy it and regenerate `data.js`).
 - **No build step:** the site is vanilla JS + CSS, readable by double-clicking `site/index.html` (`file://` works). Visual style: an academic-homepage look (fixed light navbar, white rounded cards on a light-gray page, blue links, publication-style list rows — see `web-template/README.md` for the full design spec). Lato + LXGW WenKai GB Screen fonts, Font Awesome icons, and KaTeX (for `$...$` / `$$...$$` formulas) load from CDNs (Google Fonts / jsDelivr / Cloudflare) and degrade gracefully offline.
 - **Bilingual UI (中文 / EN):** the site chrome (nav, section titles, stats, table headers, empty states, footer) is fully bilingual — toggle in the navbar (`.pk-lang`), persisted in `localStorage` (`pkbase_lang`), defaulting to the browser language. All UI strings live in the `I18N` dictionary at the top of `app.js` — **never hardcode Chinese/English text in view code**.
 - **Bilingual vault content:** when `SCHEMA.md` has `bilingual: true`, the same toggle also switches **content language**: entries in `data.js` that carry translation fields (`title_en`, `description_en`, `body_en`, …) are shown in the matching UI language, and entries without them fall back to the base-language text. Translation fields come from the sibling translation files (`<slug>.en.md` / `<slug>.zh.md`, see `## Conventions` in the SCHEMA.md template) — the site never translates on the fly. If `bilingual` is `false` (default), content is always displayed **as written**.
@@ -130,6 +196,15 @@ wiki/
   4. Write `site/data.js` (escape any `</script>` sequences inside strings as `<\/script>`), bump `meta.updated`
   5. Bump the `data.js?v=` query string in `site/index.html` to the rebuild date (cache busting — see above)
   6. Report "site rebuilt (N pages, M raw files)" in the operation's final report — do not add a separate log entry for the rebuild itself; it is part of the operation's report
+
+## Root Navigator (index.html)
+
+`<root>/index.html` is a simple, self-contained static page that links into the instances already created under the root — one card per instance. The skill ships it as `root-index.html` (next to this SKILL.md, **not** part of `web-template/`); it reuses the instance sites' academic-homepage look (Lato + LXGW WenKai GB Screen fonts, Font Awesome icons, white rounded cards on light gray, no JS, no data file — `file://`-friendly, double-click to open).
+
+- **Agent-maintained:** the skill regenerates the card block (between the `BASES:BEGIN` / `BASES:END` markers) whenever the set of instances changes — creating an instance (init step 10), renaming one, or deleting one. Rebuild the whole marker block from the current list of instance directories each time, so the navigator never accumulates stale cards.
+- **Card content:** instance name, one-line description from that instance's `SCHEMA.md` (`description`), a small Font Awesome icon fitting the instance (e.g. `fa-flask` for professional, `fa-house` for life; default `fa-folder-open`), and a link to `<instance>/site/index.html`.
+- **No cross-instance data:** cards are static HTML. The page never reads instance data (a `file://` page cannot fetch sibling files in most browsers) — the agent copies name/description from each instance's `SCHEMA.md` at generation time.
+- **Nothing else at the root:** the root directory holds only `index.html` and instance directories. Never put pages, raw material, or notes directly in the root.
 
 ## Raw Folder Organization (3-level, auto-classification)
 
@@ -173,25 +248,28 @@ Example: a motion-generation paper lands at `raw/papers/multimodal-learning/inte
 - Files are **copied** into `raw/`, never moved — the user's original folder is left intact.
 - Rename on copy to `YYYYMMDD-[author/source]-[topic-slug].[ext]` (date = the file's last-modified date if readable, else today) and place it at `raw/<material-type>/<domain>/<topic>/`.
 - Never overwrite an existing `raw/` file: on name collision append `-2`, `-3`, …
-- The material-type set (Level 1) is extensible per PKBase via `SCHEMA.md` → `## Raw Subdirectories` (e.g., add `raw/datasets/` for a data-centric domain).
+- The material-type set (Level 1) is extensible per instance via `SCHEMA.md` → `## Raw Subdirectories` (e.g., add `raw/datasets/` for a data-centric domain).
 
-## Resuming an Existing PKBASE (CRITICAL — do this every session)
+## Resuming an Existing PKBase Instance (CRITICAL — do this every session)
 
 When the user has an existing wiki, **always orient yourself before doing anything**:
 
-1. **Read `SCHEMA.md`** — understand the domain, conventions, tag taxonomy, and the configured **depth level** (from the `## Configuration` section).
-2. **Read `index.md`** — learn what pages exist and their summaries.
-3. **Scan recent `log.md`** — read the last 20-30 entries to understand recent activity.
+0. **Resolve the instance** — from the user's phrasing ("my ProBase", "add to LifeBase"). If exactly one instance directory exists under the root, that is the target; with several instances and an ambiguous request, list them (name + `SCHEMA.md` `description`) and ask. Then resolve its path:
 
 ```bash
-PKBASE="${PKBASE_PATH:-$HOME/PKBase}"
+PKBASE_ROOT="${PKBASE_ROOT:-$HOME/PKBase}"
+BASE="${PROBASE_PATH:-$PKBASE_ROOT/ProBase}"   # the resolved instance, e.g. ProBase
 # Orientation reads at session start (with whatever file tools the environment provides):
-#   $PKBASE/SCHEMA.md
-#   $PKBASE/index.md
-#   last ~30 lines of $PKBASE/log.md
+#   $BASE/SCHEMA.md
+#   $BASE/index.md
+#   last ~30 lines of $BASE/log.md
 ```
 
-`site/` is a **build artifact** — no orientation read needed. Any state-changing operation you run will regenerate `site/data.js`; if `site/` is missing (pre-web-template PKBase), the next `lint` will report and repair it.
+1. **Read `$BASE/SCHEMA.md`** — understand the domain, conventions, tag taxonomy, and the configured **depth level** (from the `## Configuration` section).
+2. **Read `$BASE/index.md`** — learn what pages exist and their summaries.
+3. **Scan recent `$BASE/log.md`** — read the last 20-30 entries to understand recent activity.
+
+`site/` is a **build artifact** — no orientation read needed. Any state-changing operation you run will regenerate `site/data.js`; if `site/` is missing (pre-web-template instance), the next `lint` will report and repair it.
 
 Only after orientation should you ingest, query, or lint. This prevents:
 - Creating duplicate pages for entities that already exist
@@ -202,29 +280,35 @@ Only after orientation should you ingest, query, or lint. This prevents:
 For large wikis (100+ pages), also run a quick file search for the topic
 at hand before creating anything new.
 
-## Initializing a New PKBASE
+## Initializing a New PKBase Instance
 
-When the user asks to create or start a PKBASE:
+When the user asks to create or start a knowledge base:
 
-1. Determine the PKBASE path (from `$PKBASE_PATH` env var, or ask the user; default `~/PKBase`)
-2. Ask the user what domain and possible topics the PKBASE covers — be specific
-3. Ask the user for their preferred **Depth Level** (`100` / `300` / `500`). Briefly explain each level (see `## Depth Levels` in the SCHEMA.md template below). If they are unsure, default to `500` (Expert deep-dive)
-3b. Ask whether the PKBase should be **bilingual** (`bilingual: true` in SCHEMA.md, with `default_lang` set to the language the user will primarily write in — default `zh`). Explain: when enabled, each page can have an optional sibling translation file (`<slug>.en.md`) that the web site's language toggle loads; untranslated pages fall back to the base language. If they are unsure, default to `false`
-4. Create the directory structure above using provided domain and topics. If topics is not available, just create the domain structure
-5. Write `SCHEMA.md` customized to the domain, topics, **depth level**, and **bilingual** setting (see template below)
-6. Write initial `index.md` with sectioned header
-7. Write initial `log.md` with creation entry
-8. **Create the web site:** copy the skill's `web-template/` folder (the one next to this SKILL.md) into `<PKBase>/site/`, then seed `site/data.js` from the fresh (empty) vault — `meta.name`/`meta.description` from `SCHEMA.md`, empty `pages`/`raw`/`log` arrays, zero `counts`. The site now exists and will be rebuilt by every subsequent state-changing operation (see `## Web Site (static showcase)`).
-9. Confirm the wiki is ready and suggest first sources to ingest (mention that `site/index.html` previews the knowledge base)
+1. Determine the **root** (from the `$PKBASE_ROOT` env var, or ask the user; default `~/PKBase`)
+2. Determine the **instance name** — what kind of base is this? Adopt the name the user gives (`ProBase` for professional/work knowledge, `LifeBase` for life & personal topics, or anything else) or propose one and confirm. The name sets the instance directory (`<root>/<name>/`) and its env var (`<NAME>_PATH`, uppercased — e.g. `PROBASE_PATH`). If `<root>/<name>/` already exists, treat it as an existing instance: orient per `## Resuming an Existing PKBase Instance` and confirm before touching it.
+3. Ask the user what domain and possible topics the instance covers — be specific
+4. Ask the user for their preferred **Depth Level** (`100` / `300` / `500`). Briefly explain each level (see `## Depth Levels` in the SCHEMA.md template below). If they are unsure, default to `500` (Expert deep-dive)
+4b. Ask whether the instance should be **bilingual** (`bilingual: true` in SCHEMA.md, with `default_lang` set to the language the user will primarily write in — default `zh`). Explain: when enabled, each page can have an optional sibling translation file (`<slug>.en.md`) that the web site's language toggle loads; untranslated pages fall back to the base language. If they are unsure, default to `false`
+5. Create the instance directory `<root>/<name>/` with the directory structure above, using the provided domain and topics. If topics is not available, just create the domain structure
+6. Write `SCHEMA.md` customized to the domain, topics, **depth level**, and **bilingual** setting (see template below) — set `name:` to the instance name and `description:` to its one-line purpose
+7. Write initial `index.md` with sectioned header
+8. Write initial `log.md` with creation entry
+9. **Create the web site:** copy the skill's `web-template/` folder (the one next to this SKILL.md) into `<root>/<name>/site/`, then seed `site/data.js` from the fresh (empty) vault — `meta.name`/`meta.description` from `SCHEMA.md`, empty `pages`/`raw`/`log` arrays, zero `counts`. The site now exists and will be rebuilt by every subsequent state-changing operation (see `## Web Site (per-instance static showcase)`).
+10. **Update the root navigator:** if `<root>/index.html` does not exist, copy the skill's `root-index.html` (next to this SKILL.md) to `<root>/index.html`; then regenerate its card block (between `BASES:BEGIN` / `BASES:END`) from **all** instance directories currently under the root — name + `SCHEMA.md` description per card (see `## Root Navigator (index.html)`).
+11. Confirm the wiki is ready and suggest first sources to ingest (mention that `<root>/<name>/site/index.html` previews this knowledge base and `<root>/index.html` navigates between all instances)
 
 ### SCHEMA.md Template
 
-Adapt to the user's domain and topics. The schema constrains agent behavior and ensures consistency across the PKBase folder structure:
+Adapt to the user's domain and topics. The schema constrains agent behavior and ensures consistency across the instance folder structure:
 
 ```md
-# PKBase Schema
+# <instance name> Schema (PKBase)
 
 ## Configuration
+- **name**: <instance name, e.g., ProBase>
+- **description**: <one-line purpose of this base, e.g., "专业知识库：多模态生成与 AI agent 研究笔记">
+- **name_en**: <English name, optional — used by the site's EN view and the root navigator>
+- **description_en**: <English one-line description, optional>
 - **depth_level**: <100|300|500>  <!-- Set during initialization: 100=Feynman, 300=College, 500=Expert -->
 - **default_lang**: <zh|en>  <!-- Primary language the base wiki files are written in. Default: zh -->
 - **bilingual**: <true|false>  <!-- When true, pages may carry a sibling translation file (<slug>.en.md when default_lang is zh, <slug>.zh.md when default_lang is en) that the web site loads on the matching language toggle. Default: false -->
@@ -248,8 +332,8 @@ Example:
 - Every action must be appended to `log.md`
 - Raw files always live three levels deep at `raw/<material-type>/<domain>/<topic>/` (never at the `raw/` root); new files are auto-classified — material type by extension/content, domain+topic matching the wiki location
 - **Formulas are always LaTeX, never code-style backticks.** Inline math: `$...$`; display math: `$$...$$`. Never wrap a formula in backticks (`` `...` ``) — that renders it as a monospace code span and Obsidian will not typeset it. Write `$x_{1:T} = [m_{\text{root},1:T};\, x_{\text{body},1:T}] \in \mathbb{R}^{T \times D}$`, not `` `x_{1:T} = [m_root; x_body]` ``. (ASCII diagrams stay in code fences — this rule is about math only.)
-- All relative paths — in frontmatter (`sources:`, `related:`) and in `[[wikilinks]]` — are resolved from the PKBase root (e.g., `wiki/concepts/agents/discovery/agent-discovery.md`). In Obsidian, set the vault to the PKBase root so these resolve natively.
-- **Bilingual pages (only when `bilingual: true`):** each base page `<slug>.md` (written in `default_lang`) MAY have a sibling translation file **in the same directory** named `<slug>.en.md` (when `default_lang: zh`) or `<slug>.zh.md` (when `default_lang: en`). The translation mirrors the base page's structure: same frontmatter fields (`title`, `description`) and the same body sections. The **base file is canonical** — it is the single source of truth for `index.md`, `log.md`, cross-references, and the primary language shown in Obsidian. Translations are **explicit files** written by the user or the agent on request — they are never auto-generated silently, and their `[[wikilinks]]`/`$...$` conventions must match the base page exactly. Translations are optional per page: a page with no translation simply falls back to its base language on the web toggle (see `## Web Site (static showcase)`).
+- All relative paths — in frontmatter (`sources:`, `related:`) and in `[[wikilinks]]` — are resolved from the instance root (the instance directory; e.g., `wiki/concepts/agents/discovery/agent-discovery.md` relative to it). In Obsidian, set the vault to the instance directory so these resolve natively.
+- **Bilingual pages (only when `bilingual: true`):** each base page `<slug>.md` (written in `default_lang`) MAY have a sibling translation file **in the same directory** named `<slug>.en.md` (when `default_lang: zh`) or `<slug>.zh.md` (when `default_lang: en`). The translation mirrors the base page's structure: same frontmatter fields (`title`, `description`) and the same body sections. The **base file is canonical** — it is the single source of truth for `index.md`, `log.md`, cross-references, and the primary language shown in Obsidian. Translations are **explicit files** written by the user or the agent on request — they are never auto-generated silently, and their `[[wikilinks]]`/`$...$` conventions must match the base page exactly. Translations are optional per page: a page with no translation simply falls back to its base language on the web toggle (see `## Web Site (per-instance static showcase)`).
 
 ## Page Thresholds
 - A concept gets its own page when it is (a) the central subject of a source, or (b) discussed substantively in 2+ sources. A single passing mention (footnote, aside) does NOT warrant a page — link to the nearest existing page instead.
@@ -372,7 +456,7 @@ tags: [concept-specific-tag, broader-topic-tag, genai-category-tag]
 - [[wiki/sources/<domain>/<topic>/<source-slug>|<Source Title>]] - what this source contributed
 \`\`\`
 
-**Frontmatter rule:** frontmatter values must be plain strings or flat string arrays — never `[[wikilinks]]`, markdown links, or nested arrays. `[[...]]` is only valid in markdown *body* text; in YAML it produces a nested array and breaks Obsidian Properties rendering of the entire frontmatter block. So `related:` and `sources:` store **plain paths** relative to the PKBase root (e.g., `wiki/concepts/agents/discovery/other-article.md`) — these are NOT clickable in Obsidian's Properties panel (a hard Obsidian limitation, not a bug), and they exist for Dataview queries and the agent's own path resolution. **The clickable links live in the body:** `## Related Concepts` and `## Sources` must use `[[wikilinks]]` (see the format above — `## Sources` links to the source-summary page, not the raw file). Both frontmatter paths and body `[[wikilinks]]` resolve from the PKBase root (the Obsidian vault root).
+**Frontmatter rule:** frontmatter values must be plain strings or flat string arrays — never `[[wikilinks]]`, markdown links, or nested arrays. `[[...]]` is only valid in markdown *body* text; in YAML it produces a nested array and breaks Obsidian Properties rendering of the entire frontmatter block. So `related:` and `sources:` store **plain paths** relative to the instance root (e.g., `wiki/concepts/agents/discovery/other-article.md`) — these are NOT clickable in Obsidian's Properties panel (a hard Obsidian limitation, not a bug), and they exist for Dataview queries and the agent's own path resolution. **The clickable links live in the body:** `## Related Concepts` and `## Sources` must use `[[wikilinks]]` (see the format above — `## Sources` links to the source-summary page, not the raw file). Both frontmatter paths and body `[[wikilinks]]` resolve from the instance root (the Obsidian vault root — the instance directory).
 
 ## Tag Taxonomy
 Every article must have a `tags` field in its frontmatter with 3-7 lowercase-kebab-case tags:
@@ -409,7 +493,7 @@ When new information conflicts with existing knowledge across sources:
 
 ### index.md Template
 
-The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it is the single master index; there is no separate `wiki/index.md`. It is sectioned by Domain and Topic. Each source entry should keep its tags in the index so `query` can use them later. Each entry is one line: wikilink + summary + tags.
+The index lives at the instance root (alongside `SCHEMA.md` and `log.md`) — it is the single master index; there is no separate `wiki/index.md`. It is sectioned by Domain and Topic. Each source entry should keep its tags in the index so `query` can use them later. Each entry is one line: wikilink + summary + tags.
 
 ```markdown
 # Wiki Index
@@ -455,6 +539,7 @@ The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it i
 > The rotated file is never overwritten.
 
 ## [YYYY-MM-DD] create | Wiki initialized
+- Instance: <name> (path: <root>/<name>)
 - Domains & Topics configured
 - Depth level: <100|300|500>
 - Structure created with SCHEMA.md, index.md, log.md, site/ (web showcase)
@@ -468,7 +553,7 @@ The index lives at the PKBase root (alongside `SCHEMA.md` and `log.md`) — it i
 
 ## Core Operations
 
-To trigger these operations, instruct the agent with the operation name, for example: "Please `add` this source" or "Run a `lint` on my wiki". If your environment supports parameterized skill invocations, use the specified argument format.
+To trigger these operations, instruct the agent with the operation name, for example: "Please `add` this source to my ProBase" or "Run a `lint` on LifeBase". If your environment supports parameterized skill invocations, use the specified argument format. **Every operation targets exactly one resolved instance** (`$BASE`, see `## PKBase Config (root + instances)`) — nothing inside an operation ever touches another instance.
 
 ### 1. Process
 
@@ -506,7 +591,7 @@ Process a single unprocessed raw file and compile it into wiki articles.
   - Add new pages to `index.md` under the correct Domain and Topic section, alphabetically
   - Update the "Total pages" count and "Last updated" date in index header
 
-- **Site rebuild:** when `add` / `ingest` call this command, they rebuild `site/data.js` in their final phase (see `## Web Site (static showcase)`). If `process` is called **directly** (not via add/ingest), regenerate `site/data.js` before reporting — the site must never lag behind the vault.
+- **Site rebuild:** when `add` / `ingest` call this command, they rebuild `site/data.js` in their final phase (see `## Web Site (per-instance static showcase)`). If `process` is called **directly** (not via add/ingest), regenerate `site/data.js` before reporting — the site must never lag behind the vault.
 
 ### 2. Add
 
@@ -544,7 +629,7 @@ For each unprocessed raw source file, call the reusable `process` command to pro
     - Updated: <list of updated wiki articles>
     ```
 
-- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (static showcase)` → Rebuild procedure).
+- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (per-instance static showcase)` → Rebuild procedure).
 
 - **Phase 6: Report what changed**
   - List every file created or updated to the user, including their full paths within the domain structure, plus the site rebuild line ("site rebuilt (N pages, M raw files)").
@@ -558,7 +643,7 @@ A single source can trigger updates across 5-15 wiki pages. This is normal and d
 Process all unprocessed files and compile them into wiki articles. Where the material comes from depends on the argument:
 
 - **No argument (default):** process files already inside `raw/`.
-- **A folder path** (any directory — typically the user's own pile of PDFs/articles living outside the PKBase): first **stage** the ingestible files from that folder into `raw/` (auto-classified into the 3-level path + renamed per "Raw Folder Organization (3-level, auto-classification)"), then process them. Originals are **copied, never moved or modified**.
+- **A folder path** (any directory — typically the user's own pile of PDFs/articles living outside the instance): first **stage** the ingestible files from that folder into `raw/` (auto-classified into the 3-level path + renamed per "Raw Folder Organization (3-level, auto-classification)"), then process them. Originals are **copied, never moved or modified**.
 
 - **Phase 0: Stage files into `raw/` (only when a folder path is given)**
   1. List the files in the folder (recursively).
@@ -596,7 +681,7 @@ For each unprocessed raw file, call the reusable `process` command with that fil
       - ...
     ```
 
-- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (static showcase)` → Rebuild procedure).
+- **Phase 5: Rebuild the web site** — regenerate `site/data.js` from the updated vault (see `## Web Site (per-instance static showcase)` → Rebuild procedure).
 
 - **Phase 6: Report what changed**
   - List every file created or updated to the user, including their full paths within the domain structure, plus the site rebuild line ("site rebuilt (N pages, M raw files)").
@@ -625,7 +710,7 @@ When the user asks a question about the knowledge base. Searches wiki articles a
     - Filed files:
       - <list of new or updated query/comparison files, if any>
     ```
-- **Phase 8: Rebuild the web site** — only if Phase 6 filed a page (vault state changed): regenerate `site/data.js` (see `## Web Site (static showcase)` → Rebuild procedure) and include the site rebuild line in the final answer.
+- **Phase 8: Rebuild the web site** — only if Phase 6 filed a page (vault state changed): regenerate `site/data.js` (see `## Web Site (per-instance static showcase)` → Rebuild procedure) and include the site rebuild line in the final answer.
 
 #### Tag-based search
 
@@ -722,9 +807,9 @@ When the user asks to run a health check on the wiki, run the checks below in or
   Pages without a translation file are NOT an issue (translation is optional per page) — but if the user expected full coverage, list the untranslated count as a summary line in the report.
 
 - **Phase 9: Web site sync check**
-  - If `site/` is missing entirely, report `MISSING SITE: run init's step 8 (copy web-template, seed data.js)` — do not recreate it silently.
+  - If `site/` is missing entirely, report `MISSING SITE: run init's step 9 (copy web-template, seed data.js)` — do not recreate it silently.
   - Compare `site/data.js` against the vault: page count per type vs. `wiki/<type>/**/*.md`, raw file count vs. `raw/` inventory, and `meta.updated`. If they diverge, report `STALE SITE: data.js has <n> pages but vault has <m>; regenerating`.
-  - **Rebuild the site** as the final step of lint (regenerate `site/data.js` per `## Web Site (static showcase)` → Rebuild procedure), even when the report has zero issues — lint is the designated repair point for a drifted site.
+  - **Rebuild the site** as the final step of lint (regenerate `site/data.js` per `## Web Site (per-instance static showcase)` → Rebuild procedure), even when the report has zero issues — lint is the designated repair point for a drifted site.
 
 - **Phase 10: Lint report + logging**
   - Group findings by severity priority:
@@ -774,17 +859,17 @@ After reporting, ask the user if they want to auto-fix:
 
 ### Searching
 
-Use the file tools available in your environment to navigate the PKBase efficiently:
+Use the file tools available in your environment to navigate the instance efficiently:
 
-- **Find pages by content:** full-text search `$PKBASE/wiki` for a keyword (e.g. "transformer") across `*.md` files
-- **Find pages by filename:** list/glob `*.md` under `$PKBASE/wiki`
-- **Find pages by frontmatter tag:** search for `tags:.*<tag>` under `$PKBASE/wiki`
-- **Read recent log activity:** read the last ~20 lines of `$PKBASE/log.md`
+- **Find pages by content:** full-text search `$BASE/wiki` for a keyword (e.g. "transformer") across `*.md` files
+- **Find pages by filename:** list/glob `*.md` under `$BASE/wiki`
+- **Find pages by frontmatter tag:** search for `tags:.*<tag>` under `$BASE/wiki`
+- **Read recent log activity:** read the last ~20 lines of `$BASE/log.md`
 
 ### Archiving
 
 When content is fully superseded or the domains/topics scope changes:
-1. Create a `_archive/` directory at the PKBase root if it doesn't exist.
+1. Create a `_archive/` directory at the instance root if it doesn't exist.
 2. Move the page to `_archive/` while preserving its domain structure (e.g., move to `_archive/concepts/agents/discovery/old-concept.md`).
 3. Remove the corresponding entry from `index.md`.
 4. Update any pages that linked to it — replace the `[[wikilink]]` with plain text + "(archived)".
@@ -792,7 +877,7 @@ When content is fully superseded or the domains/topics scope changes:
 
 ### Obsidian Integration
 
-The wiki directory works as an Obsidian vault out of the box:
+The instance directory works as an Obsidian vault out of the box:
 - `[[wikilinks]]` render as clickable links
 - Graph View visualizes the knowledge network
 - YAML frontmatter powers Dataview queries
@@ -804,15 +889,18 @@ For best results:
 - Install Dataview plugin for queries like `TABLE tags FROM "entities" WHERE contains(tags, "company")`
 
 If using the Obsidian skill alongside this one, set `OBSIDIAN_VAULT_PATH` to the
-same directory as the wiki path.
+instance directory (the one containing `wiki/`).
 
 ## Pitfalls
 
+- **Instances are independent** — never create, link, or merge content across instances: no cross-instance wikilinks, no shared `raw/` or `wiki/` files, no combined logs. The root folder is a file-management convenience only.
+- **One operation = one instance** — if a request could apply to two instances (e.g. "add this to my wiki" with several under the root), list them and ask before writing anything.
+- **Keep the root navigator in sync** — the root holds only `index.html` and instance directories. Regenerate `<root>/index.html`'s card block (between `BASES:BEGIN` / `BASES:END`) whenever an instance is created, renamed, or deleted; never put knowledge files directly in the root.
 - **Never forget to rebuild the site** — every operation that changes vault state (`init`, `add`, `ingest`, a filed `query`, `lint`, or any direct page/raw/log edit) ends by regenerating `site/data.js`. A site that lags behind the vault is a stale artifact; `lint` detects and repairs this.
 - **Never hand-edit `site/` files except `data.js`** — `index.html` / `style.css` / `app.js` / `README.md` come verbatim from the skill's `web-template/`; if they need to change, update the template and re-copy.
 - **Never modify files in `raw/`** — sources are immutable. Corrections go in wiki pages.
 - **Stage by copying, never by moving** — when ingesting from an external folder, the user's originals stay where they are; `raw/` receives copies. Never overwrite an existing `raw/` file (rename with `-2`, `-3`, …).
-- **Always orient first** — read SCHEMA + index + recent log before any operation in a new session.
+- **Always orient first** — resolve the instance, then read SCHEMA + index + recent log before any operation in a new session.
   Skipping this causes duplicates and missed cross-references.
 - **Always update index.md and log.md** — skipping this makes the wiki degrade. These are the
   navigational backbone.
@@ -824,7 +912,7 @@ same directory as the wiki path.
 - **Tags must come from the taxonomy** — freeform tags decay into noise. Add new tags to SCHEMA.md
   first, then use them.
 - **Translation files are siblings, never a separate tree** — a bilingual page's translation lives at `wiki/<type>/<domain>/<topic>/<slug>.en.md`, next to its base file. Never rename the base file, never nest translations in a separate folder, and never list them in `index.md` (the base page is the only indexed entry). The rebuild merges them into the **same** `data.js` entry (`title_en`/`description_en`/`body_en`) — if a rebuild emits a translation as its own page, the site will show duplicate entries.
-- **Never translate silently** — translation files are explicit. Only create or update `<slug>.en.md` when the user asked for it (or the PKBase convention says to); base pages always stay in `default_lang`.
+- **Never translate silently** — translation files are explicit. Only create or update `<slug>.en.md` when the user asked for it (or the instance convention says to); base pages always stay in `default_lang`.
 - **Keep pages scannable** — a wiki page should be readable in 30 seconds. Split pages over
   200 lines. Move detailed analysis to dedicated deep-dive pages.
 - **Ask before mass-updating** — if an ingest would touch 10+ existing pages, confirm

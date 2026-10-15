@@ -1,114 +1,74 @@
-# Venue Checklists for ICLR, NeurIPS, ICML, and IEEE
+# Venue and Year Requirements
 
-Use this reference near the end of `paper-plan` and during the final checks in `paper-write`.
+Use when `research-paper-plan` sets the high-level structure/page budget and when `research-paper-writing` selects a template or checks a manuscript. This is a verification checklist, not a permanent table of venue rules. Requirements change by year, track, article type and submission versus camera-ready stage. Historical templates and familiar conference conventions are clues, not authority.
 
-## When to Read
+## Establish the applicable rules first
 
-- Read once when setting the target venue.
-- Read again before locking the outline.
-- Read again during final submission-readiness checks.
+Record the actual venue, year/edition, track, document type, and submission stage. For a journal record the exact journal and article category, not just “IEEE” or “ACM.” If any are unknown, declare a generic draft and provisional layout; do not claim venue compliance or invent a current year/template.
 
-## Universal Requirements
+Use official author instructions, current call for papers, official style/template bundle, current ethics/AI-use policy and submission instructions. Prefer the specific venue/track over a publisher-wide overview. Inspect actual supplied templates and their README/version before selection. A bundled older template is not evidence of current acceptance. Do not automatically download arbitrary templates, install dependencies, or assume an online rule from memory. If browsing is unavailable, inspect supplied official materials; otherwise record the rule as unverified and the exact missing source.
 
-Across these venues, the following are usually expected:
+For each consequential rule retain:
 
-- anonymous submission unless preparing a camera-ready version,
-- references and appendices outside the main page budget,
-- enough experimental detail for reproduction,
-- honest limitations and scope boundaries,
-- clear mapping from claims to evidence.
+| Requirement | Verified value | Official source | Binding and applicability |
+|---|---|---|---|
+| Page budget | Main body limit and exactly what is counted | Actual URL or supplied official file, title/section | Access date/version/year/track/stage; local path/hash if consumed |
+| Template | Official document class/options and bibliography style | Actual official template/instructions | Edition and document type; supplied source path/hash |
+| Identity | Anonymous, single/double blind, or identified | Current policy | Author/affiliation/repository/acknowledgment implications |
+| Mandatory content | Checklist, limitations, impact/ethics, reproducibility, disclosure, availability | Actual current policy | Required versus recommended; location/length |
+| Assets/supplement | Figure quality, supplements, appendices, accessibility | Applicable instructions | File formats/limits; what belongs in page budget |
 
-## NeurIPS
+These row descriptions are not populated requirements. Fill them from actual sources; do not copy placeholder values into the plan. Keep the exact consumed official material or bounded snapshot with provenance where permitted; hash actual local bytes in the bundle. Cite actual official URLs in the plan/report. Conflicts or unverified requirements remain explicit; request clarification only when available materials cannot resolve them. A compliant generic narrative is not evidence of specific venue compliance.
 
-Planning implications:
+## Evidence and clarity checks independent of venue
 
-- The paper checklist is mandatory.
-- Claims in the Abstract and Introduction must align with the actual evidence.
-- The paper should discuss limitations honestly.
-- Reproducibility details, hyperparameters, data access, and compute usage should be documented.
-- Statistical reporting should specify error bars, number of runs, and how uncertainty is computed.
+Always keep claims aligned with actual results, limitations and reproducibility detail. Identify metric definitions, datasets/splits, hyperparameters/budgets and actual compute evidence where relevant. State n, independent unit and whether uncertainty is sample SD, SE, or a confidence interval. Theory claims require assumptions and justified proofs; empirical claims require actual measurements. These are research-integrity checks, not substitutes for official formatting policy.
 
-Final-check implications:
+Never universally assume anonymity, references/appendices outside the budget, a particular citation package, an impact statement, or a specific AI-use disclosure. These are all venue/year/type/stage questions. Keep privacy/anonymization consistent with the verified stage; do not insert unverified author details or remove real identity requirements by habit.
 
-- Confirm the paper checklist is complete.
-- Ensure limitations, reproducibility details, and compute reporting exist somewhere appropriate.
-- Verify theory papers include assumptions and full proofs in the main paper or appendix.
+## Venue-family prompts (verify; not fixed rules)
 
-## ICML
+### NeurIPS
 
-Planning implications:
+Check the current track's author instructions/template, paper checklist and what is counted in the page limit. Verify limitations, reproducibility, compute/resource reporting, ethics and AI-use/disclosure requirements and where each belongs. Do not carry an older checklist or page limit forward unexamined. Claims in the Abstract and Introduction still need direct evidence even when a checklist is complete.
 
-- The paper must budget space for an ICML-style Broader Impact statement.
-- Reproducibility expectations are strong: data splits, hyperparameters, search ranges, and compute should be documented.
-- Statistical reporting should state whether uncertainty uses standard deviation, standard error, or confidence intervals.
+### ICML
 
-Final-check implications:
+Verify the current template, page accounting, review-stage anonymity and impact-statement requirement/location. Check data splits, hyperparameters, search ranges, compute and uncertainty reporting expectations. Treat past Broader Impact wording as historical context until verified for the actual submission.
 
-- Ensure the Broader Impact statement is present in the expected location.
-- Confirm anonymization is strict: no author names, acknowledgments, grant IDs, or self-identifying repository links.
-- Verify experimental details are detailed enough for replication.
+### ICLR
 
-## ICLR
+Verify the edition/track template, page rules, anonymity, reproducibility/ethics statements and current AI-use/disclosure policy. Do not invent authorship/disclosure criteria from prior years. Front-load the actual contribution and evidence for readability, independently of any venue mandate.
 
-Planning implications:
+### CVPR, ACL, AAAI and other conferences
 
-- Reproducibility and ethics statements are often recommended even if not always mandatory.
-- If LLMs materially contributed to ideation or writing to the point of authorship-like contribution, plan a disclosure section or appendix note.
-- Keep the story front-loaded because ICLR reviewers often judge quickly from the early pages.
+Check the exact conference/year/track and paper type rather than borrowing a familiar ML conference's rules. Verify main/supplement page accounting, anonymity and self-citation/link policies, required ethics/limitations/reproducibility sections, bibliography/template requirements, and any artifact requirements. Domain-specific benchmark or reporting norms must not be promoted to official requirements without sources.
 
-Final-check implications:
+### IEEE journals, Transactions and Letters
 
-- Decide whether LLM disclosure is required for this project.
-- Confirm the paper includes enough reproducibility guidance, code/data availability information, and limitations discussion.
-- Check that the contribution is already clear by the end of the Introduction.
+Find the specific journal's current author instructions and article category. Verify anonymity, total page accounting and overlength rules, class/options, bibliography/citation interface, abstract/keyword formatting, figure quality, author information/biographies and any cover-letter requirements. Do not assume all journals are identified, have the same page limit, require membership grades, or accept the same class options. If the applicable official template uses `IEEEtran`, follow that actual template's commands and bibliography style; do not universally forbid other citation packages on the basis of the publisher name.
 
-## IEEE Journal (Transactions / Letters)
+### IEEE conferences
 
-Planning implications:
+Verify the exact conference/track and stage. Check blind-review policy, page accounting and potential extra-page terms, conference versus extended-abstract templates, keyword/citation settings, author blocks, supplements and final copyright notice. Past ICC/GLOBECOM/INFOCOM examples are not current limits. Financial/submission conditions are information to record, not authorization to pay or submit.
 
-- IEEE journals are typically **not anonymous** — include full author names, affiliations, and IEEE membership status from submission.
-- Use `\documentclass[journal]{IEEEtran}` with `\cite{}` (numeric citations via `cite` package). Do NOT use `natbib`.
-- References **count toward the page limit**. IEEE Transactions typically allow 12-14 pages total; IEEE Letters (e.g., WCL, CL, SPL) typically allow 4-5 pages total. Check the specific journal's author guidelines.
-- Include an `\begin{IEEEkeywords}` block immediately after the abstract.
-- The bibliography style must be `IEEEtran.bst` (produces numeric `[1]` style citations).
-- IEEE journals may require a biosketch (`\begin{IEEEbiography}`) for each author in the camera-ready version.
-- Some IEEE journals require a cover letter addressing how the paper differs from conference versions (if applicable).
+### ACM and other publishers/journals
 
-Final-check implications:
+Verify the exact venue and article type, review versus production template, identity policy, bibliography style, required declarations and accessibility requirements. A publisher family does not identify a specific template configuration or page budget.
 
-- Confirm author names and IEEE membership grades are correct (Member, Senior Member, Fellow).
-- Verify the total page count including references is within the journal's limit.
-- Check that all figures meet IEEE quality requirements: 300 dpi minimum, proper axis labels, readable when printed in grayscale.
-- Ensure the paper uses two-column IEEE format throughout (the `[journal]` option handles this).
-- Verify no `\citep` or `\citet` commands are present — IEEE uses `\cite{}` only.
-- Check that `\bibliographystyle{IEEEtran}` is used.
+## Planning and writing responsibilities
 
-## IEEE Conference (ICC, GLOBECOM, INFOCOM, ICASSP, etc.)
+`research-paper-plan` records sourced requirements/provisional unknowns, a realistic high-level section/page allocation, actual figure/table placement, and honest compliance limitations. Adjust space to the evidence-backed story rather than forcing a historical fixed section count. Reference-paper LaTeX is optional style context and never overrides official requirements.
 
-Planning implications:
+`research-paper-writing` uses the selected actual template and detailed prose, checks mandatory sections, citations, layout and the real compiled PDF, and records unresolved issues. Do not claim submission-readiness from this planning checklist alone. No stage submits, uploads, prints or publishes without separate explicit authorization.
 
-- Most IEEE conferences are **not anonymous** (except some like IEEE S&P). Include full author information.
-- Use `\documentclass[conference]{IEEEtran}` with `\cite{}` (numeric citations).
-- References **count toward the page limit**. Typical limit: 5-6 pages (e.g., ICC, GLOBECOM), some allow up to 8 pages (e.g., INFOCOM). Extra pages may incur additional charges.
-- Include `\begin{IEEEkeywords}` after the abstract.
-- Conference papers do NOT include author biographies.
-- Some IEEE conferences accept 2-page extended abstracts — confirm the paper category before planning.
+## Final requirements checklist
 
-Final-check implications:
-
-- Verify total page count including references fits within the conference limit.
-- Check that figures are readable at the two-column conference format size.
-- Ensure `\bibliographystyle{IEEEtran}` is used.
-- Verify no `\citep` or `\citet` commands are present.
-- Confirm the correct `\documentclass` option (`[conference]`, not `[journal]`).
-- Some conferences require IEEE copyright notice — check submission portal for specific requirements.
-
-## Minimal Submission Checklist
-
-Before submission, verify:
-
-- the venue-specific required sections are present,
-- the page budget is satisfied for the main body,
-- the contribution bullets do not overclaim,
-- citations, figures, tables, and references are internally consistent,
-- the PDF is anonymized and ready for reviewer consumption.
+- [ ] Venue/year/track/type/stage are known, or the draft is explicitly generic.
+- [ ] Consequential rules have actual applicable official sources and dated/versioned bindings.
+- [ ] Page budget states exactly how references, appendices, statements and supplements count.
+- [ ] Template/citation choices follow the actual applicable source, not historical defaults.
+- [ ] Identity policy and required statements/disclosures are verified, not assumed.
+- [ ] Claims, uncertainty, citations and figures/tables are evidence-traceable.
+- [ ] Unknown/conflicting requirements and their effect on compliance are explicit.
+- [ ] No checklist completion is misrepresented as compilation, independent review, user approval or submission authorization.

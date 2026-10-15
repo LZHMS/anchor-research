@@ -1,6 +1,6 @@
 # web-template — PKBase 静态展示站点
 
-`wiki-pk-base` 技能内置的静态站点模板。技能把本目录**复制**到 PKBase 内的 `site/`，之后每次状态变更（`add` / `ingest` / `lint`）都**只重新生成 `data.js`** 来重建站点 —— 其余文件永不手改。
+`wiki-pk-base` 技能内置的静态站点模板。技能把本目录**复制**到每个实例的 `site/`（如 `~/PKBase/ProBase/site/`），之后每次状态变更（`add` / `ingest` / `lint`）都**只重新生成 `data.js`** 来重建站点 —— 其余文件永不手改。
 
 ## 文件清单
 
@@ -25,7 +25,7 @@
 
 ## 双语内容（bilingual vault）
 
-切换语言不仅切换 UI 框架，也切换 **vault 内容**（当 PKBase 的 `SCHEMA.md` 配置了 `bilingual: true` 时）：
+切换语言不仅切换 UI 框架，也切换 **vault 内容**（当实例的 `SCHEMA.md` 配置了 `bilingual: true` 时）：
 
 - **翻译文件约定**：wiki 里每个 base 页 `<slug>.md`（用 `default_lang` 语言写，是 canonical 文件）可配一个**同目录**的翻译文件 `<slug>.en.md`（`default_lang: zh` 时）或 `<slug>.zh.md`（`default_lang: en` 时），例如 `wiki/concepts/multimodal-learning/interactive-motion/flow-matching.en.md`。翻译文件结构与 base 页一致（同样的 frontmatter 字段 + 同样的正文小节），**不单独进 index.md**。
 - **重建时合并**：技能重建 `data.js` 时，把翻译文件的 frontmatter / 正文合并进 base 页**同一条目**的 `_en`（或 `_zh`）字段：Page 为 `title_en` / `description_en` / `body_en`，`meta` 为 `name_en` / `description_en`（来自 `SCHEMA.md`），`raw[]` 为 `title_en` / `description_en`（可选标注），`log[]` 为 `title_en` / `detail_en`（可选）。翻译文件**不得**作为独立条目出现 —— 否则站点会显示重复条目。
@@ -72,3 +72,11 @@
 - 图标：Font Awesome 6（fa-solid / fa-regular），不用 emoji
 - 页面列表：出版卡片式（彩色封面方块 + 标题 + 描述 + meta 徽章行）
 - 四类页面配色：source 蓝 `#2c5f8a` / concept 绿 `#2e7d32` / comparison 橙 `#e65100` / query 紫 `#7b1fa2`
+
+## 根目录导航页 root-index.html（在技能根目录，不属于本 site/ 模板）
+
+技能目录里还有一个 `root-index.html`（与 SKILL.md 同级，**不在本 `web-template/` 目录内**）——它是 PKBase 根目录（`~/PKBase/`）的**实例导航页**：
+
+- 创建第一个实例时，技能把它复制到 `~/PKBase/index.html`。风格与本模板一致（academic-homepage：浅灰底、白色圆角卡片、fixed 顶栏、Lato + LXGW WenKai、Font Awesome），但无 JS、无 data.js、无 KaTeX —— `file://` 直接双击打开。
+- **由 agent 维护**：实例创建 / 重命名 / 删除时，重新生成 `BASES:BEGIN` 与 `BASES:END` 标记之间的实例卡片块 —— 每个实例一张卡片：名称、`SCHEMA.md` 的 `description` 一句话、合适的 Font Awesome 图标（如专业 `fa-flask`、生活 `fa-house`）、链接到 `<实例>/site/index.html`。每次从当前实例目录清单**整体重建**该块（不增量修补），标记外的内容永不手改；模板更新时整页重拷并重新注入卡片。
+- **实例互不交叉**：本页只做导航，不读取任何实例数据（`file://` 页面在多数浏览器无法 fetch 同级文件）；名称与描述由 agent 从各实例的 `SCHEMA.md` 抄入。

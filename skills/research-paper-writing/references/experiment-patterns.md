@@ -1,6 +1,6 @@
 # Experiment Design Patterns
 
-Patterns and best practices distilled from running research experiments at scale with the Hermes agent. These cover experiment infrastructure, evaluation protocols, monitoring, and failure recovery.
+Historical experiment-design and analysis reference, not an executable manuscript-writing workflow. All execution, monitoring, recovery, analysis and plotting examples below are out of scope for research-paper-writing. They require separately authorized planning/execution stages; they never permit source changes, new measurements, installs, process control or Git operations during writing.
 
 ---
 
@@ -431,9 +431,7 @@ Check the status of the [EXPERIMENT_NAME] experiment:
    - Read the result JSON files
    - Report metrics in a table (Borda scores, accuracy, etc.)
    - Compute key comparisons between methods
-5. If all experiments in this batch are complete:
-   - git add -A && git commit -m "[COMMIT_MESSAGE]" && git push
-   - Report final summary
+5. If the separately authorized experiment batch is complete, report its actual summary without repository or publication actions.
 6. Key question: [SPECIFIC ANALYTICAL QUESTION]
 
 If nothing has changed since the last check, respond with [SILENT].
@@ -464,8 +462,8 @@ If nothing has changed since the last check, respond with [SILENT].
 Key finding: Autoreason shows +2pp improvement over single pass, while 
 best-of-6 collapses due to single-public-test selection issue.
 
-Committed: `git commit -m "Add Haiku code results (150 problems, 4 strategies)"`
-Next: Run significance tests on these results.
+Status: Illustrative historical report only; no repository action is authorized.
+Next: Any new analysis requires its separately authorized stage.
 ```
 
 ---
@@ -481,8 +479,8 @@ Next: Run significance tests on these results.
 | **Process crash** | PID gone, log stops mid-problem | Re-run script (resumes from last checkpoint) |
 | **Wrong model ID** | Model not found errors | Fix ID (e.g., `claude-opus-4-6` not `claude-opus-4.6`) |
 | **Parallel slowdown** | Each experiment taking 2x longer | Reduce parallel experiments to 2-3 max |
-| **Security scan blocks** | Commands blocked by security | Use `execute_code` instead of piped `terminal` commands |
-| **Delegation failures** | `delegate_task` returns errors | Fall back to doing work directly |
+| **Security restrictions** | Host refuses an action | Respect the restriction; report the blocker, never bypass it |
+| **Delegation unavailable** | No isolated worker capability | Report the capability limit; do not fabricate independent review |
 | **Timeout on hard problems** | Process stuck, no log progress | Kill, skip problem, note in results |
 | **Dataset path mismatch** | File not found errors | Verify paths before launching |
 
@@ -559,11 +557,7 @@ Constrained tasks test whether methods respect scope boundaries. Design with:
 
 ### Setup: SciencePlots + matplotlib
 
-Install SciencePlots for publication-ready defaults:
-
-```bash
-pip install SciencePlots matplotlib numpy
-```
+These plotting examples belong to separately authorized result preparation, not writing. Use existing available dependencies only; missing dependencies require explicit environment provisioning, never an automatic install.
 
 **Option A: SciencePlots styles** (recommended — handles most defaults automatically):
 

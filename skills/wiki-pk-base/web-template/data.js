@@ -5,7 +5,7 @@
    the wiki-pk-base skill regenerates it (rebuild) whenever
    init / add / ingest / lint changes the vault.
 
-   Schema (all paths relative to the PKBase root, no .md kept
+   Schema (all paths relative to the instance root, no .md kept
    is fine either way — the reader strips it):
 
    双语约定（bilingual vault）：
@@ -20,7 +20,7 @@
 
    window.PKBASE_DATA = {
      meta: {
-       name: string,          // PKBase 名称（SCHEMA.md → name）
+       name: string,          // 实例名称（SCHEMA.md → name，如 ProBase）
        description: string,   // 一句话描述
        name_en?: string,      // 英文名称（可选）
        description_en?: string, // 英文描述（可选）
@@ -62,7 +62,7 @@
      topic: string,       // 路径第二级
      tags: string[],      // frontmatter tags
      updated: string,     // frontmatter updated / last_reviewed（可选）
-     source?: string,     // frontmatter source（source 页的来源文件，相对 PKBase 根）
+     source?: string,     // frontmatter source（source 页的来源文件，相对实例根）
      body: string         // 正文 markdown（不含 frontmatter），保留 $..$ 公式与 [[wikilink]]
    }
 
@@ -73,9 +73,9 @@
    ============================================================ */
 window.PKBASE_DATA = {
   meta: {
-    name: "PKBase · 动作生成研究",
+    name: "ProBase · 动作生成研究",
     description: "多模态交互动作生成（Interactive Motion）论文知识库",
-    name_en: "PKBase · Motion Generation Research",
+    name_en: "ProBase · Motion Generation Research",
     description_en: "A literature knowledge base for multimodal interactive motion generation",
     updated: "2025-07-01 18:30"
   },

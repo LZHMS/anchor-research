@@ -1,8 +1,8 @@
-# Orchestra-Adapted Writing Principles
+# Evidence-Backed Writing Principles
 
-Use this reference when `paper-plan` needs help shaping the paper's story or when `paper-write` needs stronger drafting and revision guidance.
+Use this reference when `research-paper-plan` shapes an audited high-level narrative or when `research-paper-writing` performs detailed drafting and revision.
 
-This is the expanded English counterpart to the detailed Chinese version. It is not a new workflow phase. Its purpose is to provide a stronger writing model on top of the existing `insleep` pipeline.
+These principles support the stage contracts; they do not replace result preparation, independent review, final user approval, or current venue requirements. Planning first reads actual docs, implementation/evaluation code and completed result data, prepares real tables/figures, and binds each claim to evidence. Writing expands that approved bundle rather than inventing or reselecting evidence. Read `result-preparation.md` for the preparation procedure and `venue-checklists.md` for authoritative-source-based venue/year checks.
 
 ## Contents
 
@@ -44,6 +44,10 @@ By the end of the Introduction, the reader should clearly understand:
 A strong paper “sells” **one thing** that was previously absent or non-obvious. The full paper should be organized around that single contribution.
 
 ### Practical Rules
+
+- The contribution follows the actual evidence, including negative findings; a persuasive story cannot repair missing data or incompatible protocols.
+- Every numeric claim and visual maps to prepared result/aggregate IDs, with n, units, uncertainty and limitations. The illustrative numbers below are writing examples, never project measurements.
+- These named writing models and length/structure suggestions are heuristics, not verified venue requirements or empirical guarantees about reviewers.
 
 - If the core contribution cannot be stated in one sentence, the framing has not converged.
 - Every section should serve the same story instead of launching a second one.
@@ -108,7 +112,7 @@ Prefer a compact five-part abstract:
 ### What a Good Abstract Should Do
 
 - Enter the paper's specific contribution in the first one or two sentences.
-- Include at least one explicit quantitative result.
+- Include a verified quantitative result when appropriate to the contribution; never invent a number to satisfy an abstract formula.
 - Be understandable without the main text.
 - Avoid undefined acronyms.
 - Avoid depending on citations to explain itself.
@@ -139,12 +143,12 @@ The problem is not just that these openings sound stale. They carry **too little
 
 ### Basic Requirements
 
-In two-column conference papers, the Introduction is usually best at about 1-1.5 pages.
+An Introduction of about 1-1.5 pages can be a useful starting heuristic for some two-column conference papers; adapt to the evidence, format, and actual venue budget.
 
 It should satisfy the following:
 
-- the method should start appearing by page 2-3 at the latest,
-- the Introduction should include 2-4 contribution bullets,
+- surface the method early enough for the reader to follow the argument,
+- use a small number of concrete contribution statements where useful,
 - the central story should already make sense before technical detail arrives.
 
 ### Recommended Structure
@@ -167,8 +171,8 @@ It should satisfy the following:
    - ideally no longer than 1-2 lines each
 
 5. **Results preview**
-   - surface the strongest result early
-   - tell the reader what is worth remembering
+   - surface the most informative supported finding early, including a negative result when central,
+   - tell the reader what is worth remembering without hiding conflicting results or uncertainty.
 
 6. **Optional roadmap**
    - briefly describe the remaining sections
@@ -372,7 +376,7 @@ Stronger alternatives are often:
 - introduce
 - characterize
 
-This is not about mechanical substitution. It is about how wording changes a reviewer's intuition about whether the work is a real contribution.
+Use the verb that accurately describes what was done. A modification remains a modification; do not inflate novelty through vocabulary or replace an accurate term merely to sound stronger.
 
 ## Mathematical Writing
 
@@ -451,6 +455,9 @@ Do:
 - State what is being compared.
 - State what the reader should notice.
 - Do not make the caption depend on the surrounding paragraph for essential meaning.
+- For measured figures, identify dataset/split, metric/direction/unit, independent unit, valid n, uncertainty definition and any exclusions or transformations.
+- Link every plotted series and numeric caption to the prepared result/aggregate IDs. A method diagram must match inspected code and must not masquerade as a measurement.
+- Only inspected real renders count as prepared visuals; no invented curves, placeholders, or selective smoothing.
 
 ## Common Mistakes
 
@@ -458,9 +465,9 @@ Do:
 
 | Mistake | Fix |
 |--------|-----|
-| Introduction longer than 1.5 pages | Move background to Related Work |
+| Introduction overwhelms the evidence/story | Compress background or move it to Related Work; use the actual venue budget |
 | Method buried too late | Front-load the contribution and compress the intro |
-| Missing contribution bullets | Add 2-4 concrete claims |
+| Contributions are unclear | Add concrete, evidence-supported claims; do not force a fixed count |
 | Experiments not tied to claims | State what each experiment tests |
 
 ### Writing Mistakes
@@ -476,7 +483,7 @@ Do:
 
 | Mistake | Fix |
 |--------|-----|
-| Raster plots | Use PDF / EPS or other vector output |
+| Needlessly rasterized line plots | Prefer suitable PDF/SVG vector output; retain honest raster data where appropriate |
 | Red-green color schemes | Switch to colorblind-safe palettes |
 | Titles inside figures | Move the title into the caption |
 | Captions that require the main text | Rewrite them to be self-contained |
@@ -500,10 +507,10 @@ Do:
 
 ### Structure
 
-- [ ] The abstract follows the five-sentence formula.
-- [ ] The Introduction stays within about 1-1.5 pages.
-- [ ] The method starts by page 2-3.
-- [ ] There are 2-4 concrete contribution bullets.
+- [ ] The abstract clearly states contribution, scope and actual evidence; formulas are optional heuristics.
+- [ ] The Introduction fits its purpose and the verified page budget.
+- [ ] The method appears early enough to support the story.
+- [ ] Contribution statements are concrete and tied to audited evidence.
 - [ ] Limitations are clearly stated.
 
 ### Writing
@@ -517,6 +524,9 @@ Do:
 
 - [ ] Citations are verified.
 - [ ] Error bars and statistical reporting are clear.
+- [ ] Result/aggregate IDs, valid n, exclusions and independent units are traceable through tables, plots and claims.
+- [ ] One-run results do not claim estimated between-run SD; missing/nonfinite/failed data are honest.
+- [ ] Original-code applicability and incompatible protocols constrain the narrative explicitly.
 - [ ] Compute resources are documented.
 - [ ] Code / data availability is stated.
 

@@ -1,228 +1,139 @@
 ---
 name: research-paper-writing
-description: Executes paper writing into LaTeX strictly after the research-paper-plan skill has completed. Focuses on drafting, revision, and submission based on PAPER_PLAN.md and already-completed experiments.
-version: 2.0.0
+description: Compose, review, and actually compile a detailed manuscript from an approved, immutable result-backed paper planning bundle. No experiments or publication actions.
+version: 3.1.0
 author: Zhihao Li
 license: MIT
-dependencies: [semanticscholar, arxiv, habanero, requests]
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
-    tags: [Research, Paper Writing, ML, AI, NeurIPS, ICML, ICLR, ACL, AAAI, COLM, LaTeX, Citations]
-    category: research
-    related_skills: [arxiv, subagent-driven-development, plan]
-    requires_toolsets: [terminal, files]
+  related_skills: [research-paper-plan, research-paper-poster]
 ---
 
 # Research Paper Writing
 
-Pipeline for producing publication-ready ML/AI research papers targeting **NeurIPS, ICML, ICLR, ACL, AAAI, and COLM**. This skill strictly covers the writing lifecycle: literature review, narrative structuring, paper drafting, review, revision, and submission. 
+Writing is the middle stage: **research-paper-plan → research-paper-writing → research-paper-poster**. Planning organizes actual code/results and approves the high-level story; writing expands that story into detailed sections and paragraphs, verifies citations and numeric correspondence, and produces a genuinely reviewed build. It does not run experiments, re-analyze data, select new evidence, or publish anything.
 
-*(Note: This skill assumes all experiments have been fully executed, and results are available in logs or data files.)*
+Use host-provided file access, command execution, questions, optional isolated reviewers and visual inspection. No particular agent framework, editor, provider, reviewer profile or API is required. Dependencies are capabilities to check, not packages to automatically install. Never change global environments, launch training/inference/evaluation, control unrelated processes, perform Git operations, schedule work, send notifications, upload, submit or print.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    RESEARCH PAPER PIPELINE                  │
-│                                                             │
-│  Phase 0: Project Setup ──► Phase 1: Literature Review      │
-│       │                          │                          │
-│       ▼                          ▼                          │
-│  Phase 4: Submission    ◄── Phase 3: Self-Review            │
-│       Prep                       & Revision ◄─────────┐     │
-│       │                          ▲                    │     │
-│       ▼                          │                    │     │
-│  Phase 5: Post-Acceptance   Phase 2: Paper Drafting ──┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+Follow the [shared human anchor gates](../research-shared-references/anchor-gates.md) and the self-contained rules here. User-confirmed direction outranks autonomous framing; actual code/results describe implementation, not permission to change the problem. Stage entry, final manuscript acceptance and poster entry are separate decisions.
 
----
+## 1. Resolve scope and authorization
 
-## When To Use This Skill
+Resolve `PROJECT_ROOT`: explicit argument > accepted bound invocation > current working project. `DOCS_ROOT` defaults to `PROJECT_ROOT/docs`; inherit an explicitly bound override. `repo_path` is the actual code root and may differ. Never use the installed skill directory as project root.
 
-Use this skill when:
-- **Writing or revising** any section of a research paper from existing experimental results.
-- **Synthesizing findings** from result JSONs or `experiment_log.md` into narrative.
-- **Preparing for submission** to a specific conference or workshop (formatting, checks).
-- **Responding to reviews** with revisions or rebuttals.
-- **Converting** a paper between conference formats.
+Defaults:
+- `PLAN_DIR = DOCS_ROOT/research-paper-plan`
+- `WRITING_DIR = DOCS_ROOT/research-paper-writing`
+- Inputs: `PLAN_DIR/PAPER_PLAN.md`, `PAPER_BUNDLE.json`, `PAPER_PLAN_STATE.json`.
+- Outputs: `WRITING_DIR/main.tex`, `sections/`, `references.bib`, `figures/`, `tables/`, successful `main.pdf`, `WRITING_REPORT.md`, actual review reports, `MANUSCRIPT_MANIFEST.json`, `WRITING_STATE.json`.
 
-## Core Philosophy
+Honor explicitly bound existing source/output paths without moving or deleting user files. Do not silently fall back to root `PAPER_PLAN.md`, `paper/`, dated folders, latest-by-mtime sources or aliases. Accept exact `paper_plan_path`, `bundle_path`, `paper_plan_state_path`, `source_materials`, `repo_path`, `code_paths`, `result_paths`, `report_paths` and `evidence_paths`; preserve the approved bundle's exact bindings onward. Reports and diagnostic advice are context, not measurements; writing consumes planning's prepared results, not newly extracted report numbers.
 
-1. **Be proactive.** Deliver complete drafts, not questions.
-2. **Never hallucinate citations.** AI-generated citations have ~40% error rate. Always fetch programmatically. Mark unverifiable citations as `[CITATION NEEDED]`.
-3. **Paper is a story, not a collection of experiments.** Every paper needs one clear contribution stated in a single sentence.
-4. **Commit early, commit often.** Every paper draft update — commit with descriptive messages.
+A direct explicit invocation authorizes only this requested stage. Otherwise require one latest unresolved bare-object `NEXT_SKILL_HANDOFF` from `research-paper-plan` to `research-paper-writing`, with `project_root`, `docs_root`, fully resolved recommended chat `invocation`, `artifacts: [{role,path,sha256}]`, `status: awaiting_confirmation`, and exact `paper_plan_path`, `bundle_path`, `paper_plan_state_path`, `source_materials`. Artifacts must enumerate all three control files and consumed inventories, with hashes and semantic provenance.
 
----
+Direct unambiguous yes/可以/继续 to that unique offer consumes it once. Quoted/ambiguous assent, refusal, silence, timeout, autonomous mode and previously consumed assent never authorize. Refusal sets `declined`; changed bindings set `stale` and require fresh scope/assent. Revalidate before writes/actions, then record `accepted` and `running`; `completed` only for the real completed stage, `failed` on failure. Recovery is only within the same authorized stage and unchanged verified scope. Outline approval is not writing authorization; neither grants poster or publication permission.
 
-## Input Interpretation
+## 2. Mandatory immutable entry gate
 
-This skill MUST consume the following materials before writing:
-1. **`PAPER_PLAN.md`**: The exact structure, contribution, and claims-evidence matrix to follow (output of `research-paper-plan`).
-2. **`docs/materials/paper/`**: Directory containing highly relevant, reference papers (source LaTeX code) to study for stylistic and structural reference.
-3. **`docs/materials/figures/`**: Directory containing required figures (e.g., task PDFs, method diagrams) to insert into the manuscript.
-4. **Research Reports**: (e.g., `experiment_log.md`, `NARRATIVE_REPORT.md`) Detailed logs containing the actual empirical data.
-5. **`research_foundation_review.json`**: The canonical source for literature review. Use this to construct citations.
-6. **Skill Resources**: Use the skill's `./templates/` directory to initialize the target LaTeX workspace and `./references/` for venue-specific writing norms.
+Before drafting or resuming:
 
----
+1. Read the exact plan, bundle and state. Require schema_version 1, plan state `ready`, actual independent plan review evidence, and `outline_approval.approved: true` with the current `bundle_sha256` and actual user confirmation reference. Verify state's `paper_plan_path`, `paper_plan_sha256`, `bundle_path`, `bundle_sha256` against real bytes.
+2. Verify every `sources` and `derived` `{role,path,sha256}` inventory entry in `PAPER_BUNDLE.json`, including plan, actual implementation/evaluation code, original configurations/attempt bindings, completed raw result snapshots, `RESULTS.json`, `RESULTS_REPORT.md`, analysis scripts, prepared tables/figures and reviews. Inventory files, not directory labels. Hash actual file bytes; UTF-8 text is not normalized before hashing. Missing files, stale hashes, malformed records, unapproved/incomplete bundles and unresolved required evidence/review are blockers, not opportunities to pick substitutes.
+3. Validate the bound proposal/literature and paired summary's existing canonical `input_sha256`, context and `papers_sha256` semantics when consumed. Preserve original plan/proposal/code/config/run/attempt bindings; never reassign historical metrics to current code. Direct projects may bind exact equivalent materials; record absent context honestly, never fabricate it.
+4. For dynamic logs use the bundle's immutable bounded snapshots and recorded source identities/watermarks; do not replace them with the now-growing log or silently ignore truncation/reset/mismatch.
+5. Read approved claims (`supported`, `partial`, `unsupported`), limitations, exclusions and denominators. Only approved, appropriately qualified claims may enter prose. A completed negative result is legitimate; missing evidence is not. Reject unsupported assertions presented as established findings.
 
-## Phase 0: Project & Template Setup
+Keep these bindings fixed. Changed claim, result, method, data, source selection or figure semantics returns to planning for regenerated evidence/review and fresh user outline approval; writing must not repair evidence by recomputing statistics, running jobs, selecting better seeds, adding baselines or silently changing the story. A new invocation alone cannot waive readiness.
 
-**Goal**: Initialize the workspace using templates and ingest the planning materials.
+## 3. Template and composition preparation
 
-### Step 0.1: Load Templates and References
-- Check the venue targeted in `PAPER_PLAN.md`.
-- Locate the matching LaTeX template inside the skill's `./templates/` folder. Copy it to the workspace's `paper/` directory.
-- Consult the skill's `./references/` folder for LaTeX best practices or venue checklists before writing.
+Read [writing-guide.md](references/writing-guide.md), relevant parts of [paper-types.md](references/paper-types.md), [reviewer-guidelines.md](references/reviewer-guidelines.md), and [checklists.md](references/checklists.md). Venue/year details in these references are historical aids, not current requirements. Experiment/human-evaluation/autoreason references are background only; they do not authorize analysis or execution in this stage. The boundaries here override any older lifecycle advice in references.
 
-### Step 0.2: Ingest the Plan
-Read `PAPER_PLAN.md` thoroughly. Internalize the **One-sentence contribution**, the **Claims-Evidence Matrix**, and the **Section Structure**. The drafted paper MUST strictly adhere to this outline.
+Inspect actual available [templates](templates/README.md), their source instructions and the bound target venue, year, track and document type. Use a supplied current template where appropriate; do not call an old bundled year current. Copy only needed template resources into the output workspace, preserving licenses. Do not modify vendor templates in the installed skill or delete user compiled assets. Unknown requirements permit a clearly declared generic draft, not venue-compliance claims. No arbitrary automatic downloads, package installs or shell escape. If required resources are unavailable, record the exact blocker.
 
-### Step 0.3: Inspect Reference Materials
-Read through the LaTeX source files in `docs/materials/paper/` to understand your target tone, terminology, math formatting, and structural habits of high-quality papers in this specific domain.
+Optional reference-paper LaTeX can inform rhetorical structure, notation, caption density and transitions. It is not mandatory, evidence for this project's results, or permission to copy prose/claims. Enumerate/hash any actually consumed reference includes/assets. Do not require a fixed reference-paper directory.
 
----
+Build a paragraph-level composition map in `WRITING_REPORT.md`: section/subsection, paragraph purpose, planned claim IDs, evidence IDs, citation keys, figure/table labels and page budget. This detailed expansion belongs here, not in the planning outline. Preserve the approved high-level story and scope while choosing effective paragraph order and transitions.
 
-## Phase 1: Citation Building & Asset Mapping
+## 4. Citations and prepared assets
 
-**Goal**: Prepare the BibTeX file and figure assets before drafting prose.
+Construct `references.bib` from the approved citation plan and bound literature. Verify identity (title, authors, year, venue, stable identifier), actual cited passage and metadata against supplied source documents or authoritative records using available capabilities. No invented entries or references from memory. Metadata verification is allowed; searching for a new literature/evidence selection is not. Missing or conflicting metadata/support is recorded as a blocking citation issue, not a fake citation key in a ready manuscript. API clients in [citation-workflow.md](references/citation-workflow.md) are optional examples, never mandatory dependencies or installation instructions.
 
-### Step 1.1: Construct the Bibliography
-Extract required references from `research_foundation_review.json` and `PAPER_PLAN.md`'s Citation Plan.
-- Construct `paper/references.bib`.
-- **Never hallucinate citations.** If a requested citation lacks metadata, use Python APIs (Semantic Scholar / arXiv) to fetch the accurate BibTeX.
+Copy the bundle's actual prepared figures and tables into the manuscript workspace, preserving originals and source IDs. No new analysis, replotting, smoothing, recomputation, reselection or changed aggregates here. Typographic adjustments (font size, line wrapping, dimensions, label readability) may preserve semantics and must be recorded. A semantic asset change returns to planning.
 
-### Step 1.2: Map the Figures
-Verify the image files listed in the `PAPER_PLAN.md` Figure Plan against `docs/materials/figures/`.
-- Copy or link these PDFs/images into the `paper/figures/` directory.
-- Prepare the `\includegraphics{}` paths for the drafting phase.
+Maintain a traceability ledger in `WRITING_REPORT.md`. For **every numeric assertion and every caption**, record TeX path/label/locator, claim ID, result_id/aggregate_id or prepared table-cell/figure-series ID, exact source path/hash/locator, displayed value/unit/precision, uncertainty semantics and any already approved transform. Protocol numbers, dataset sizes and hyperparameters map to bound code/config/protocol sources rather than being mislabeled as measured outcomes. Qualitative diagrams/captions map to bound method evidence; never invent result IDs. All empirical values must match `RESULTS.json` and approved prepared assets. Use only already justified rounding; percentage versus percentage-point differences, direction, valid n, split and budget remain explicit. A missing approved numeric transform is a planning issue, not permission to calculate a new headline.
 
----
+## 5. Detailed manuscript composition
 
-## Phase 2: Paper Drafting
+Use the approved What/Why/So What as the narrative spine. Do not confuse persuasive structure with inflated certainty.
 
-**Goal**: Write a complete, publication-ready paper.
+- **Title:** precise problem/contribution keywords; avoid unsupported superiority and unnecessary acronyms.
+- **Abstract:** specific contribution, challenge/importance, approach, evidence and qualified takeaway. The five-sentence formula is a useful scaffold, not a quota. Every result/number must already be approved and traceable.
+- **Introduction:** move from concrete problem to gap, central insight, approved contribution bullets and bounded evidence preview. Explain why the gap matters, not why the whole field is popular. Fit the approved page budget rather than applying a universal page rule.
+- **Background/related work:** group by approaches, assumptions and contrasts, not a sequence of paper summaries. Separate prior authors' findings from this study's claims; cite the actual support for each distinction.
+- **Method:** define task and notation before use; present intuition before formalism, then algorithm, inputs/outputs, assumptions, objective and implementation details from the approved code-to-method map. Distinguish implemented behavior from aspirational proposal text. Use reproducible specifics without adding unexecuted variants.
+- **Experimental setup:** specify bound datasets/tasks/splits, metrics and direction/unit, baselines, budgets, seeds, valid/excluded run counts and already prepared statistical procedures. State which approved question each comparison answers.
+- **Results:** lead paragraphs with the question, point to the actual table/figure, state the bounded observation, then interpret cautiously. Include failures/null findings and comparability limits. Tables use legible aligned numbers and consistent precision; emphasize best entries only where the approved comparisons justify it. Never imply significance merely from ranking or overlapping error bars.
+- **Captions:** explain what is shown, data scope, axes/units, method labels, independent unit/valid n and the actual error-bar statistic; distinguish observation from interpretation. Make the panel understandable without inventing missing methodological detail.
+- **Discussion/limitations/impact:** distinguish evidence from hypotheses, describe external-validity and missing-experiment limits, and report genuine ethics/disclosure facts without invented approval, consent or universal safety claims.
+- **Conclusion:** restate only the supported takeaway and scope; no new claims or numbers.
+- **Appendices:** preserve required reproducibility details/proofs and planned supporting results. Do not hide evidence needed to understand a main claim or add unapproved results.
 
-### Step 2.1: Ingest Results & Execute the Narrative
+For theory, survey or position structures use the approved evidence and [paper-types.md](references/paper-types.md); this skill cannot bypass an incomplete planning bundle by relabeling an empirical paper.
 
-Review the research reports (e.g., `experiment_log.md`) to extract the exact empirical numbers. Bridge these findings to prose supporting the claims validated in the `PAPER_PLAN.md` Claims-Evidence matrix. 
-**Do not invent claims** — only write what was planned and evidenced.
+### Two passes
 
-### Step 2.2: Two-Pass Refinement Pattern
+**Pass 1: draft and locally refine.** Give each paragraph one purpose: topic sentence → evidence/reasoning → bounded implication → transition. Keep subjects near verbs, put familiar context first and important new information in stress positions, replace vague pronouns and nominalizations, define symbols/acronyms once, and remove generic openings. Preserve technical precision over decorative variation.
 
-**Pass 1 — Write + immediate refine per section:**
-Draft complete sections (Abstract, Intro, Methods, etc.) and immediately refine local logic and clarity.
+**Pass 2: global consistency.** Read the whole paper against the ledger and plan. Align title/abstract/contributions/results/conclusion, terminology, notation, units, denominators, limitations, captions and cross-references. Remove duplicated background and unsupported causal/superlative language. Check bibliography completeness, labels/includes, escaped characters and venue-compatible packages. Use typography helpers only if compatible with the actual template.
 
-**Pass 2 — Global refinement with full-paper context:**
-Revisit sections looking for cross-section consistency, redundancy, and terminology alignment.
+## 6. Actual build and independent review
 
-### Step 2.3: Section-by-Section Guidelines
+Inspect the build recipe for side effects; use an available compiler appropriate to the actual template. For example, `latexmk -pdf main.tex` is suitable only when that executable and the template's engine/dependencies are present. Alternatives must perform the real necessary bibliography and cross-reference passes, not merely execute one command. No automatic installs or uploads. Record exact command, cwd, engine/version, dependency information, exit code and full log. Inspect unresolved citations/references, missing assets/fonts, overflow/page constraints and the produced PDF when inspection is available. Zero exit alone is insufficient. Never use an old PDF as evidence of a current successful build; preserve it as historical if needed and mark it nonfinal.
 
-*   **Title**: 1-2 keywords, method name. Not too long.
-*   **Abstract (5-Sentence Formula)**: What you achieved, why it's hard, how you do it, evidence, most remarkable number.
-*   **Introduction (1-1.5 pages)**: Clear problem statement, 2-4 bullet contributions.
-*   **Methods**: Enable reimplementation. Pseudocode, architectural details.
-*   **Experiments & Results**: State what claim each experiment supports. Use booktabs for tables, bold best values. Explicit direction symbols ($\uparrow$ or $\downarrow$).
-*   **Related Work**: Organize methodologically, not paper-by-paper.
-*   **Limitations & Broader Impact (REQUIRED)**: Be honest. "No negative impacts" is an instant red flag.
-*   **Conclusion**: Restate contribution, summarize findings, don't introduce new claims.
+Obtain real independent review through available isolated host reviewers or an independent human review, not a self-authored pretend ensemble or named framework profile. Give reviewers the actual manuscript, approved plan/bundle/results, ledger and build evidence. Request actionable checks of evidence/numerical/caption fidelity, method/code correspondence, citation support, clarity, limitations and actual venue/layout constraints. Save actual reports at unused flat `writing-review-0001.md`, etc., including reviewer independence, reviewed input hashes, findings and disposition. Do not overwrite earlier reports or invent scores. Self-checks complement but never replace independence. Missing independent review capability leaves `awaiting_review`, never `ready`.
 
-### Step 2.4: LaTeX Professionalism
+Integrate actual feedback; record each fix or unresolved issue. Evidence changes return upstream. After material edits repeat affected checks, rebuild when any build input changes, and obtain review covering the final content; explicitly bind final review coverage. Numerical/citation/review/compilation blockers prevent readiness and a poster offer. Missing required visual inspection is explicitly unverified/blocked, not claimed as passed.
 
-```
-LaTeX Quality Checklist:
-- [ ] No unenclosed math symbols ($ signs balanced)
-- [ ] Only reference figures/tables that exist (\ref matches \label)
-- [ ] Every \begin{env} has matching \end{env}
-- [ ] No unescaped underscores outside math mode (use \_ in text)
-- [ ] Numbers in text match actual experimental results
-- [ ] All figures have captions and labels
-```
+## 7. Freeze actual artifacts and state
 
-Use `microtype` (typography), `booktabs` (tables), `siunitx` (number alignment), `cleveref` (cross-references).
+Write `WRITING_REPORT.md` with resolved scope/paths, template provenance and compliance limits, paragraph map, citation and numeric/caption ledger, copied asset bindings, typography changes, actual build/inspection records, review dispositions and outstanding blockers. No placeholder completion claims.
 
----
+Write `MANUSCRIPT_MANIFEST.json` with `schema_version: 1` and these required fields:
+- `project_root`, `docs_root`, `paper_plan_path`, `bundle_path`, `bundle_sha256`, `paper_plan_state_path`, `paper_plan_state_sha256`.
+- `paper_tex_path`; `paper_pdf_path` and `paper_pdf_sha256` only for a real corresponding PDF (use honest null when no final PDF exists).
+- `sources`: exact consumed source inventories `{role,path,sha256}`, retaining original planning provenance and control-file bindings, including optional consumed style sources and verified citation records.
+- `files`: actual `{role,path,sha256}` for entry TeX, every transitive include, bibliography/style resources, tables/figures/assets, build logs, report, actual reviews and relevant produced analysis artifacts if any. No invented analysis output; existing prepared analysis stays attributed to planning.
+- `build`: actual command/cwd/engine/version/exit_code, log path/hash, actual build-input hashes and final PDF correspondence. Capture engine, bibliography/style and local template inputs actually used, not just `main.tex`. Record unavailable command/engine/log facts honestly as null with reason; failed/unavailable compilation cannot imply a final build.
 
-## Phase 3: Self-Review & Revision
+Freeze sources before recording build-input hashes; perform the actual build against those bytes, then bind its real PDF digest and successful checks. Build evidence must show that final PDF corresponds to exactly the inventoried inputs. If any input changes, invalidate/rebuild. Record review/report hashes after finalizing them. Do not hash `MANUSCRIPT_MANIFEST.json` itself or mutable `WRITING_STATE.json` inside its inventories; do not introduce report/review/manifest digest cycles. Reports can bind reviewed source digests without embedding the future manifest digest.
 
-**Goal**: Simulate the review process before submission. Catch weaknesses early.
+Freeze manifest, then write `WRITING_STATE.json` with `schema_version: 1`, `status: blocked|awaiting_review|awaiting_confirmation|ready`, actual `compilation_status: succeeded|failed|unavailable`, `manifest_path`, `manifest_sha256`, `bundle_sha256`, actual review result evidence/bindings, and `manuscript_approval: {approved, manifest_sha256, confirmation_reference}`. Pending approval is false with null approved digest/reference. Ready requires current real successful compilation, resolved mandatory numeric/citation/format checks, actual independent final-content review AND user acceptance of this exact final manifest. Hash the exact state only when offering downstream; never insert its own hash or mutate frozen manifest to contain it. Any subsequent content change invalidates state/review/build/approval as applicable. Deliver partial drafts honestly as blocked or waiting, not ready.
 
-### Step 3.1: Simulate Reviews (Ensemble Pattern)
+### Final manuscript anchor — wait for the researcher
 
-Generate reviews from multiple perspectives.
-**Step 1:** Form 3-5 independent reviewing agents (with a critical bias). Have them score Soundness, Clarity, Significance, Originality.
-**Step 2:** Meta-review (Area Chair aggregation) to find consensus on weaknesses.
+After genuine build/review checks pass, set `awaiting_confirmation`, present the actual final PDF/source, main claims and numeric takeaways, exclusions/limitations, review disposition, exact manifest path/hash and proposed delivery scope. Ask whether the user accepts this exact manuscript as the current final content. Entry consent, paper-outline approval, reviewer praise, silence, timeout and an autonomous flag do not answer this gate. Record the actual reply/reference only after unambiguous acceptance, revalidate all manifest/input bytes, then update only state to `manuscript_approval.approved: true` bound to that manifest and `status: ready`. Do not edit the frozen manifest to mark approval. Edits/refusal retain false approval; changed content returns through affected checks and a fresh final gate. Accepting this manuscript alone does not enter poster or authorize submission.
 
-### Step 3.2: Claim Verification Pass
+## 8. Explicitly scoped revision operations
 
-1. Extract every factual claim from the paper (numbers, comparisons).
-2. Trace it to the specific result file.
-3. Flag any claim without a traceable source as `[VERIFY]`.
+Rebuttal, camera-ready preparation and venue conversion require explicit requested scope and the same valid evidence/build/review gates. Rebuttal addresses actual supplied review points politely with supported evidence; missing new experiments are routed to approved planning/execution, not promised or run. A change-marked PDF may be made only with an available inspected tool and real compilation. Camera-ready changes identities/acknowledgments only from supplied authorized facts and actual venue requirements; it does not infer acceptance. Format conversion starts from the actual target template, migrates content rather than incompatible preambles, and checks changed page/disclosure rules; claim/data changes still return to planning. None authorizes submission, public posting, upload, code release or publication strategy execution.
 
-### Step 3.3: Rebuttal Writing
+## 9. Optional writing → poster handoff
 
-When responding to actual reviews (post-submission):
-- Address every concern point-by-point.
-- Never be defensive or dismissive.
-- Use `latexdiff` to generate a marked-up PDF showing changes.
+Offer [research-paper-poster](../research-paper-poster/SKILL.md) only when writing state is `ready`, `manuscript_approval.approved` is true for the actual current `manifest_sha256` with a genuine confirmation reference, real final PDF/source/assets match the successful build, final independent review is resolved and the approved planning bundle remains current. Never offer from an unapproved manuscript, failed/unavailable build, stale PDF, draft or unresolved blocker.
 
----
+Print actual final paths and a fully resolved recommended chat invocation, for example `/research-paper-poster project="<actual-project-root>" docs_root="<actual-docs-root>" manuscript_manifest_path="<actual-manifest>" writing_state_path="<actual-state>" bundle_path="<actual-bundle>" paper_pdf_path="<actual-pdf>" paper_tex_path="<actual-tex>" asset_paths=[<actual-enumerated-assets>]`. Replace every illustrative value; do not emit placeholders as an offer.
 
-## Phase 4: Submission Preparation
+Expose one bare-object conversation variable `NEXT_SKILL_HANDOFF` with:
+- `from_skill: research-paper-writing`, `to_skill: research-paper-poster`, actual `project_root`, `docs_root`, fully resolved `invocation`, `status: awaiting_confirmation`;
+- `manuscript_manifest_path`, `writing_state_path`, `bundle_path`, `paper_pdf_path`, `paper_tex_path`, `asset_paths` (actual transitive included paths, bibliography and assets, not a presumed glob), `target_venue` (honest null if unknown), and genuine `limitations`;
+- `artifacts: [{role,path,sha256}]` enumerating manifest, state, frozen planning control/results inventories, final PDF, TeX/includes/bibliography/assets and real build/review evidence.
 
-**Goal**: Final checks, format verification, and compilation.
+Ask whether to enter poster with this exact reviewed build, then stop. Only direct unambiguous assent to the latest unique offer authorizes that stage once. No approval cascading, automatic poster creation, printing or acceptance claim. Poster is terminal in this workflow.
 
-### Step 4.1: Anonymization Checklist
+## Version history
 
-```
-- [ ] No author names or affiliations
-- [ ] No acknowledgments section
-- [ ] Self-citations in third person ("Smith et al. [1] showed..." not "We showed...")
-- [ ] Use Anonymous GitHub for code links
-```
+- **3.1.0:** Added a final user-confirmed manuscript anchor after genuine review/build, separate from poster entry; state binds exact manifest bytes and invalidates acceptance on content changes.
 
-### Step 4.2: Pre-Compilation Validation
-
-```bash
-# 1. Lint with chktex
-chktex main.tex -q -n2 -n24 -n13 -n1
-
-# 2. Check duplicate labels or missing figures using simple regex/scripts.
-```
-
-### Step 4.3: Final Compilation
-
-```bash
-latexmk -pdf main.tex
-# Or: pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
-```
-
-### Step 4.4: Venue Format Conversion
-
-When converting between venues (e.g., ICML to ICLR), **never copy LaTeX preambles**. Start fresh with the target template, copy only content sections, adjust for page limits, and add venue-specific required sections (like ICLR LLM disclosure).
-
----
-
-## Phase 5: Post-Acceptance Deliverables
-
-### Step 5.1: Camera-Ready Preparation
-- De-anonymize (names, emails, real GitHub).
-- Add acknowledgments.
-- Final page limit check (sometimes differs from submission).
-
-### Step 5.2: arXiv Strategy
-Post to arXiv *after* submission deadlines for double-blind venues, using the correct category (e.g., `cs.LG`, `cs.CL`). Update with v2 after acceptance.
-
----
-
-## Tool Usage Patterns (Writing & Revision)
-
-| Tool | Usage in This Pipeline |
-|------|----------------------|
-| **`terminal`** | LaTeX compilation (`latexmk -pdf`), git operations. |
-| **`execute_code`** | Run Python for citation verification, querying arXiv/SemanticScholar. |
-| **`read_file`** / **`write_file`** / **`patch`** | Paper editing. Use `patch` for targeted edits to large .tex files. |
-| **`delegate_task`** | **Parallel section drafting** — spawn isolated subagents for abstract, methods, and results parsing. |
-| **`todo`** | Track granular progress (e.g., drafting queue, revision checks). |
+- **3.0.0:** Host-neutral manuscript-only stage; approved immutable planning bundle gate; default docs stage directories; detailed paragraph composition and numeric/caption ledger; actual independent review/build manifest/state; explicit scoped revisions and consent-bound poster handoff. Removed framework/editor/API requirements, automatic Git/install/publication actions and legacy output aliases.
+- **2.3.0:** Earlier plan-driven writing and adjacent-stage confirmation workflow.
