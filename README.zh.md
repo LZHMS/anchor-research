@@ -1,172 +1,207 @@
-# Anchor Research
+<div align="center">
 
-> **Anchor first. Automate second.**（先下锚，再自动化）
+# ⚓ Anchor Research
 
-一个 **anchor-first 的自动化科研（Auto Research）Skill 框架系统**。
+### *Anchor first. Automate second.*（先下锚，再自动化）
 
-**[English README → README.md](README.md)**
+**基于人机对齐锚点门控的自动化科研（Auto Research）Skill 框架系统**
 
-传统的 auto research 是“先自动化，再说”——把方向丢给 agent，然后一路放任自动探索：
-自动跑实验、自动堆 baseline、自动改写方案……**方向偏了都无人察觉**。等论文最终写出来才发现解决的根本不是当初想解决的问题，几个 GPU 月的算力就这样白白浪费。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Framework: Anchor-First](https://img.shields.io/badge/Framework-Anchor--First-065F46.svg?style=for-the-badge)](#-什么是锚点anchor)
+[![Skills: 14 Modules](https://img.shields.io/badge/Skills-14%20Integrated-7C3AED.svg?style=for-the-badge)](#-skills-一览)
+[![Runtime: Host-Neutral](https://img.shields.io/badge/Runtimes-Claude%20Code%20%7C%20Copilot%20%7C%20Neutral-2563EB.svg?style=for-the-badge)](#-使用方式与环境兼容)
 
-**Anchor Research 反其道而行之：在每一个关键阶段都先下锚，再启动自动化。**
-这里的“锚点（Anchor）”绝不仅是开局写下的一份初始文档，而是**贯穿全科研生命周期的一系列确定性人机对齐门控**——
-每个阶段的核心产物（文献语境、证据图景、问题定义、方法方案、实验计划、每轮里程碑决策、论文故事线、定稿手稿、海报展示）都必须**先向研究者呈现、充分沟通确认、固化为带校验哈希的锚点**，后续阶段的自动化操作才允许启动。在整个执行链路中，系统会持续回读上游锚点回答同一个核心问题：*“我们是否仍然在解决最初那个正确的问题？”*
+<br>
 
-```text
-传统 auto research:        idea ──► 一路无引导自动探索 ──► 论文（方向早已跑偏，无人知晓）
+<p align="center">
+  <a href="README.md"><b>English</b></a> •
+  <a href="#readme"><b>简体中文</b></a>
+</p>
 
-Anchor Research:
-                         文献调研与深度综述
-                            │  📌 锚点 0: 语料边界与证据图景（经人审核确认）
-                            ▼
-                         研究方案（Ideas）
-                            │  📌 锚点 1: Problem Anchor（问题定义与底线约束，经人审核确认）
-                            │  📌 锚点 2: 核心贡献与方法方案 FINAL_PROPOSAL（机制与界限，经人审核确认）
-                            ▼
-                         实验路线规划
-                            │  📌 锚点 3: 核心 claims + 任务清单 + 决策门控（经人审核确认）
-                            ▼
-                         实验运行与监控
-                            │  📌 锚点 4: 追踪记录与里程碑决策（偏离/失败 → 暂停，向人请示决策）
-                            ▼
-                         论文规划（Plan）
-                            │  📌 锚点 5: 真实核验数据、图表与叙事大纲（经人审核确认）
-                            ▼
-                         论文写作（Writing）
-                            │  📌 锚点 6: 完整编译手稿与事实数据追溯（经人审核确认）
-                            ▼
-                         海报与展示交付
-                            │  📌 锚点 7: 海报视觉版式与演讲脚本（逐 checkpoint 确认）
-                            ▼
-                         最终交付完成
+<br>
+
+<img src="assets/anchor-research-banner.svg" alt="Anchor Research 架构总览" width="100%">
+
+<br>
+
+[🎯 核心动机](#-核心动机为什么需要-anchor-research) •
+[⚓ 什么是锚点](#-什么是锚点anchor) •
+[🏛️ 框架架构](#-系统架构与数据流) •
+[📦 Skills 索引](#-skills-一览) •
+[🚀 工作流程](#-典型工作流程happy-path) •
+[📄 产物层级](#-实体产物与状态文件权威层级) •
+[🤝 衔接协议](#-阶段衔接门控协议stage-handoff-protocol)
+
+</div>
+
+---
+
+## 🎯 核心动机：为什么需要 Anchor Research？
+
+传统的自动化科研（Auto Research）存在着严重的**“先自动化，再说”**认知陷阱：
+1. 给 Agent 一个宽泛的探索方向或初步想法；
+2. Agent 随即陷入无约束的死循环：自动写代码、自动跑训练、自动堆叠 Baseline、自动改写 Proposal；
+3. **科研方向在此过程中发生静默漂移，却无人察觉。**
+
+等最终论文草稿生成出来，研究者往往哭笑不得地发现：Agent 绕开硬骨头，解决了一个无关紧要的平庸问题。**数十个 GPU 周的算力与数月的心血，就这样白白消耗在失控的幻觉中。**
+
+> [!IMPORTANT]
+> **Anchor Research 反其道而行之：在自动化每一步展开前，先落下不可篡改的人机对齐锚点。**
+> “锚点（Anchor）”绝不仅是一开始的那篇 Prompt，而是**贯穿全科研生命周期的一系列确定性人机对齐门控**。文献范围、演化图景、问题瓶颈、方法机制、实验指标、每轮里程碑、论文大纲、定稿手稿，都必须**先向研究者呈现、充分沟通确认、固化为不可变文件**，后续阶段的自动化操作才被允许启动。
+
+### ⚖️ 传统 Auto Research 与 Anchor Research 对比
+
+| 核心特性 | ❌ 传统 Auto Research | ⚓ Anchor Research |
+|---|---|---|
+| **研究者的角色** | 终局时才看的看客（或报错时的修 bug 工） | **每个决策节点不可替代的领航员（Human-in-the-Loop）** |
+| **阶段推进方式** | 无人监管的自主级联执行 | **单阶段显式 Handoff，严格基于文件 SHA-256 密码学摘要绑定** |
+| **目标漂移处理** | 悄悄偷换容易做的课题以刷高“成功率” | **漂移即刻触发警报并暂停后续工作，提请研究者显式重新锚定** |
+| **代码与问题关系** | 随意修改方案去迎合写出来的代码 | **代码是实现真相，绝无凌驾于研究者原始问题的权威** |
+| **实验指标核验** | 依赖 Agent 自报数字或虚假 Mock | **基于已保存预测值与真实标签的归一化审计与可运行脚本绘图** |
+| **操作权限管控** | 默认赋予后台脚本自动执行/杀进程权限 | **三权严格分离：阶段准入 ≠ 产物批准 ≠ 实质外部动作授权** |
+
+---
+
+## ⚓ 什么是“锚点（Anchor）”？
+
+锚点是**在某个科研阶段结束前，向研究者完整呈现、经过充分讨论确认，并固化为物理文件的核心结论**。
+
+它具备三个不可逾越的基本属性：
+
+1. 🔒 **显式确认（Confirm-then-Commit）**：
+   绝非 Agent 单方面的乐观草稿，也不是代码库测试通过的零返回值。只有人类研究者明确签署批准，锚点才告成立。**大模型审稿自评高分、静默或等待超时，永远无法替代人类确认。**
+2. 🔍 **密码学级可校验（Verifiable）**：
+   下游所有阶段必须通过精确的文件字节 SHA-256 和规范 JSON 摘要回读上游锚点（`anchor check`），任何文件篡改或数据漂移都会导致执行即刻中断。
+3. 👑 **绝对权威性（Authoritative Over Automation）**：
+   锚点的权威性绝对高于 Agent 的启发式自主探索。一旦实验结果或代码与锚点冲突，系统必须**停下来向研究者请示决策**，严禁擅自偏航。
+
+---
+
+## 🔗 全流程 8 重人机锚点链
+
+```mermaid
+graph TD
+    A["0a. 文献调研<br><b>CORPUS_STATE.json</b>"] -->|"📌 锚点 0a: 语料范围确认"| B["0b. 文献综述<br><b>SUMMARY_STATE.json</b>"]
+    B -->|"📌 锚点 0b: 证据图景确认"| C["1. 问题界定<br><b>PROBLEM_ANCHOR.md</b>"]
+    C -->|"📌 锚点 1: 核心问题锚点"| D["2. 方案设计<br><b>FINAL_PROPOSAL.md</b>"]
+    D -->|"📌 锚点 2: 方案机制定稿"| E["3. 实验规划<br><b>EXPERIMENT_PLAN.md</b>"]
+    E -->|"📌 锚点 3: 任务投影确认"| F["4. 实验执行<br><b>EXPERIMENT_TRACKER.md</b>"]
+    F -->|"📌 锚点 4: 里程碑人机决策"| G["5. 论文规划<br><b>PAPER_BUNDLE.json</b>"]
+    F -.->|"↺ 发现实质分歧"| R["反向回填<br><b>research-retrofit</b>"]
+    R -.->|"人机重新锚定门控"| C
+    G -->|"📌 锚点 5: 真实数据与叙事"| H["6. 论文写作<br><b>MANUSCRIPT_MANIFEST.json</b>"]
+    H -->|"📌 锚点 6: 定稿手稿批准"| I["7. 会议海报展示<br><b>POSTER_STATE.json</b>"]
 ```
 
-**每个阶段 = 一次锚定（人机对齐门控） + 一次受锚约束的自动化执行。**
-
----
-
-## 什么是“锚点（Anchor）”
-
-锚点是**在某个科研阶段结束前，与研究者沟通确认并以不可变文件形式固化下来的核心判断**。它具备三个根本属性：
-
-1. **已确认（Confirmed）**：绝非 agent 单方面生成的乐观草稿或虚构进度，而是由人类研究者明确签署确认的结论（confirm-then-commit）。大模型的自评高分、执行脚本的零返回值、静默或超时，均不可替代人类确认。
-2. **可校验（Verifiable）**：后续每一轮、每一个阶段都必须通过完整字节 SHA-256 和规范 JSON 摘要回读上游锚点（`anchor check`），严格检测是否存在目标漂移。
-3. **有权威（Authoritative）**：锚点的权威级别高于 agent 的自主决策。当自动化执行与锚点发生冲突时，系统必须服从锚点，或者立即暂停并提请人类重新锚定。
-
-### 全流程锚点链明细
-
-| # | 阶段 | 锚点（实体产物） | 如何与研究者对齐 | 负责 Skill |
+| # | 阶段 | 锚点实体文件 | 与研究者确认的核心内容 | 负责 Skill |
 |---|---|---|---|---|
-| 0a | 文献调研 | **语料范围**（`CORPUS_STATE.json`） | 呈现源检索覆盖、合并文献清单与证据等级；必须获得 `corpus_approval` 才能发起综述 | `research-literature-review` |
-| 0b | 文献综述 | **证据图景**（`SUMMARY_STATE.json`） | 呈现跨论文演化图景、公开缺陷与局限；必须获得 `summary_approval` 才能进入方案设计 | `research-literature-summary` |
-| 1 | 问题界定 | **问题锚点**（`PROBLEM_ANCHOR.md`） | 文献驱动时呈现 4–6 个候选供显式挑选；起草锚点并在方法展开前获得 `anchor_approval` | `research-ideas` |
-| 2 | 方法方案 | **核心贡献方案**（`FINAL_PROPOSAL.md`） | 锁定单一主导机制增量；多轮独立审稿人评审；在正式替换当前方案前必须获得 `proposal_approval` | `research-ideas` |
-| 3 | 实验规划 | **核心 claims 与任务清单**（`EXPERIMENT_PLAN.md` + `EXPERIMENT_PLAN_STATE.json`） | 锁定验证指标、里程碑决策门控、算力上限；必须获得 `plan_approval` 确认任务清单映射 | `research-experiment-plannning` |
-| 4 | 实验执行 | **运行追踪记录**（`EXPERIMENT_TRACKER.md`） | 校验计划任务投影；里程碑决策门控暂停等待人类指示；异常漂移或失败暂停等待策略决策（无自动击杀或超时自动放行） | `research-run-experiment` |
-| 5 | 论文规划 | **审计结果、图表与叙事**（`PAPER_PLAN.md` + `PAPER_BUNDLE.json`） | 用真实预测与标签核算指标；生成可运行绘图/表格；独立评审；经用户确认循环通过完整 Bundle | `research-paper-plan` |
-| 6 | 论文写作 | **定稿编译手稿**（`main.tex` + `main.pdf` + `MANUSCRIPT_MANIFEST.json`） | 依会议模板展开完整章节；每项数据与图注追溯至结果 ID；真实 LaTeX 编译；评审后经用户确认手稿 | `research-paper-writing` |
-| 7 | 展示交付 | **会议海报与演讲**（`main.pdf` + `poster.pptx` + `poster.svg` + `POSTER_SPEECH.md`） | 从定稿论文提取 60 秒视觉叙事；内容大纲与卡片布局 checkpoints 默认等待用户确认；视觉复核与独立评审 | `research-paper-poster` |
+| **0a** | 文献检索 | `CORPUS_STATE.json` | 检索覆盖度、去重文献清单、启用数据源与证据边界限制 | [`research-literature-review`](skills/research-literature-review/SKILL.md) |
+| **0b** | 深度综述 | `SUMMARY_STATE.json` | 跨论文综合图景、技术谱系演化、已有工作局限与开放缺陷 | [`research-literature-summary`](skills/research-literature-summary/SKILL.md) |
+| **1** | 问题界定 | `PROBLEM_ANCHOR.md` | 文献驱动时呈现 4–6 个候选供显式挑选；锁定不可变的核心瓶颈、应用场景与明确非目标 | [`research-ideas`](skills/research-ideas/SKILL.md) |
+| **2** | 方案设计 | `FINAL_PROPOSAL.md` | 单一主导机制增量、极简公式接口与最小验证闭环，经独立审稿后定稿方案 | [`research-ideas`](skills/research-ideas/SKILL.md) |
+| **3** | 实验规划 | `EXPERIMENT_PLAN.md`<br>+ `EXPERIMENT_PLAN_STATE.json` | 核心 claims、里程碑决策门控（Stop/Go）、算力预算上限及核准任务投影 | [`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md) |
+| **4** | 实验执行 | `EXPERIMENT_TRACKER.md` | 单一追踪器生命周期；部署前核验计划投影；遇到失败或里程碑门控时暂停等待人类决策 | [`research-run-experiment`](skills/research-run-experiment/SKILL.md) |
+| **5** | 论文规划 | `PAPER_PLAN.md`<br>+ `PAPER_BUNDLE.json` | 对照预测值与标签审计指标；运行制图脚本生成真实矢量图表；确认论文故事线 | [`research-paper-plan`](skills/research-paper-plan/SKILL.md) |
+| **6** | 论文写作 | `main.pdf` + `main.tex`<br>+ `MANUSCRIPT_MANIFEST.json` | 会议模板排版；程序化检验 BibTeX 引用；100% 数值可追溯账本；批准定稿手稿清单 | [`research-paper-writing`](skills/research-paper-writing/SKILL.md) |
+| **7** | 展示交付 | `main.pdf` + `poster.pptx`<br>+ `poster.svg` + `POSTER_SPEECH.md` | 提炼 60 秒视觉叙事；内容大纲与卡片布局 checkpoints 默认等待用户确认；多格式检验导出 | [`research-paper-poster`](skills/research-paper-poster/SKILL.md) |
 
-> **关于反向重新锚定（Re-anchoring）**：锚点不是死板的化石。当代码实现与最初方案出现实质分歧时，`research-retrofit` 会将代码作为“实现真相（Ground Truth）”，但**绝不赋予代码凌驾于研究者原始问题的权力**。它会诊断分歧，在 `docs/research-retrofit/` 下起草对齐方案，并**向研究者提问：是调整代码以符合原问题，还是确认重新锚定问题（Re-anchor）以适应当前实现？** 严防 agent 擅自篡改科研目标。
+> [!NOTE]
+> **重新锚定 vs. 目标漂移（`research-retrofit`）**：
+> 当实验实现与原初方案产生分歧时，`research-retrofit` 对代码进行逆向工程分析。**代码是代码实现的真相，但绝非研究者科研目标的权威。** 系统会诊断分歧并向您提问：*是修改代码实现以符合原问题，还是由您明确确认重新下锚（Re-anchor）以适应当前实现？* 严防 Agent 擅自改写问题定义。
 
 ---
 
-## 系统架构与数据流
+## 🏛️ 系统架构与数据流
 
-每个 Skill 都是专注自身任务的“自动化执行器”；真正维持科研航向不偏航的，是镶嵌在它们之间的 **📌 锚点门控**。上游产物必须通过锚点检验，方能流向下游。
+Anchor Research 将整个科研链路划分为 5 大协同层级，统一由顶层协议技能 [`research-shared-references`](skills/research-shared-references/SKILL.md) 约束管理：
 
 ```text
- ┌─ 知识与文献层 ───────────────────────────────────────────────────────────────────┐
- │  wiki-pk-base（PKBase 知识库） / research-daily-ideas（每日预印本流入）           │
+ ┌─ 1. 知识与文献层 ───────────────────────────────────────────────────────────────┐
+ │  wiki-pk-base（持久化 PKBase 知识库） ◄──► research-daily-ideas（每日预印本流入） │
  │        │                                                                        │
  │        ▼                                                                        │
- │  research-literature-review ──📌 锚点 0a（语料范围确认）──►                     │
- │  research-literature-summary ──📌 锚点 0b（证据图景确认）──►                    │
+ │  research-literature-review  ──► 📌 锚点 0a: 语料覆盖范围确认                  │
+ │        │                                                                        │
+ │        ▼                                                                        │
+ │  research-literature-summary ──► 📌 锚点 0b: 演化图景与缺陷确认                 │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ 方案层（Proposal Layer）───────────────────────────────────────────────────────┐
+ ┌─ 2. 方案层（Proposal Layer）───────────────────────────────────────────────────┐
  │  research-ideas:                                                                │
- │    候选路线挑选 ──► 📌 锚点 1: PROBLEM_ANCHOR.md（确认问题定义）               │
- │    机制深度细化 ──► 独立评审打磨 ──► 📌 锚点 2: FINAL_PROPOSAL.md（确认方案）   │
+ │    候选路线挑选 (4–6 个选项) ──► 📌 锚点 1: PROBLEM_ANCHOR.md (确认问题)       │
+ │    机制深度设计 ──► 独立同行评审 ──► 📌 锚点 2: FINAL_PROPOSAL.md (确认方案)    │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ 实验层（Experiment Layer）─────────────────────────────────────────────────────┐
+ ┌─ 3. 实验层（Experimentation Layer）─────────────────────────────────────────────┐
  │  research-experiment-plannning:                                                 │
- │    Claim 映射 ──► 里程碑决策门控 ──► 📌 锚点 3: EXPERIMENT_PLAN.md              │
- │    核准任务清单投影 approved_task_inventory（确认实验规划）                      │
+ │    路线与里程碑规划 ──► 📌 锚点 3: 核准任务清单投影 (approved_task_inventory)    │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-run-experiment:                                                       │
- │    部署授权任务 ──► 评估预测指标 vs 真实标签                                   │
- │    辅助工具 1: research-structured-codebase（模块化注册表训练框架骨架）         │
- │    辅助工具 2: research-training-check（无副作用的指标质量诊断建议）           │
- │    📌 锚点 4: 单一追踪器 EXPERIMENT_TRACKER.md + 里程碑人机决策                 │
- │    （出现未授权漂移 / 运行失败 / 预算耗尽 → 暂停新工作，等待人机沟通）          │
+ │    追踪器对齐 ──► 部署授权运行 ──► 严格比对数据集真实标签评估                   │
+ │    [辅助] research-structured-codebase（模块化注册表驱动训练框架）              │
+ │    [辅助] research-training-check（无副作用指标质量诊断报告）                   │
+ │    📌 锚点 4: 里程碑人机决策门控与遇阻策略确认                                  │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ 论文与交付层（Paper & Delivery Layer）─────────────────────────────────────────┐
+ ┌─ 4. 论文与展示层（Paper & Delivery Layer）──────────────────────────────────────┐
  │  research-paper-plan:                                                           │
- │    审计归一化结果 + 运行工程脚本绘制真实图表/表格                               │
- │    谋划故事线 ──► 📌 锚点 5: PAPER_PLAN.md & PAPER_BUNDLE.json（大纲与数据确认）│
+ │    真实指标归一化审计 ──► 运行分析制图脚本 ──► 输出真实图表与表格               │
+ │    📌 锚点 5: PAPER_BUNDLE.json 与论文叙事线 (用户审核确认循环)                 │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-paper-writing:                                                        │
- │    细化章节写作 ──► 真实 LaTeX 编译 ──► 独立审查                                │
- │    📌 锚点 6: MANUSCRIPT_MANIFEST.json & 完整手稿（确认定稿论文）               │
+ │    细化章节起草 ──► 引文程序化验证 ──► 真实编译器编译 ──► 独立同行审稿          │
+ │    📌 锚点 6: MANUSCRIPT_MANIFEST.json 与定稿论文 (确认定稿手稿)                │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-paper-poster:                                                         │
- │    📌 锚点 7: 海报内容计划与卡片布局确认（逐 checkpoint 人机确认）              │
- │    A0/A1 打印级 PDF + 原生/组件式 PPTX + SVG + 演讲脚本                         │
+ │    📌 锚点 7: 海报大纲与视觉卡片布局 (人机逐 Checkpoint 确认)                   │
+ │    A0/A1 打印级 PDF + 原生与分卡片 PPTX + 矢量 SVG + 展台演讲脚本               │
  └─────────────────────────────────────────────────────────────────────────────────┘
 
- ↺ research-retrofit: 代码 ↔ 方案回填对齐。将现有代码作为实现真相，诊断缺口，
-   提请研究者明确决策是否重新下锚更新 PROBLEM_ANCHOR.md，经批准后方更新正式文档。
+ ↺ research-retrofit: 代码反哺方案。逆向解析代码实现，诊断功能缺口，
+   提请研究者明确决策是否重新下锚，经批准后方更新正式文档。
 ```
 
 ---
 
-## Skills 清单一览
+## 📦 Skills 一览
 
-全部 12 个 Skill 均位于 `skills/` 下，遵循宿主中立原则（全面兼容 Claude Code、VS Code Copilot 等主流 Agent 环境），无任何硬编码的专有 CLI 或云端绑定：
+本仓库在 `skills/` 下提供了 **14 个宿主中立的专业技能**：
 
 ### 📚 文献与知识层
 
-| Skill | 角色职责 | 触发词示例 |
-|---|---|---|
-| [`research-literature-review`](skills/research-literature-review/SKILL.md) | 从 Zotero、PKBase、Obsidian、网络多源收集、去重与规范化文献，输出 `research_foundation_review.json`。在 `CORPUS_STATE.json` 中需要 `corpus_approval` | "find papers", "literature review", "文献调研" |
-| [`research-literature-summary`](skills/research-literature-summary/SKILL.md) | 两阶段文献深度综述：逐篇论文由子代理分析，全局演化图景深度综合（`overview_summary.md`, `aggregate_report.md`）。在 `SUMMARY_STATE.json` 中需要 `summary_approval` | "summarize literature", "analyze papers", "文献综述" |
-| [`wiki-pk-base`](skills/wiki-pk-base/SKILL.md) | 按照 Karpathy LLM Wiki 范式构建的持久化个人知识库（PKBase）：Markdown 知识网络 + 静态浏览器可视化站点。由人挑选源头，由 Agent 维护索引 | "wiki", "knowledge base", "PKBase", "知识库" |
-| [`research-daily-ideas`](skills/research-daily-ideas/SKILL.md) | 可选的每日预印本流入工具：根据主题或 Zotero 兴趣抓取最新 arXiv 论文，提取源码与插图，撰写深度分析并归档入库 | "今日论文", "daily ideas", "arxiv daily" |
+* **[`research-literature-review`](skills/research-literature-review/SKILL.md)** (`v2.7.0`)：多源文献采集（Zotero、PKBase、Obsidian、arXiv），去重与规范化输出 `research_foundation_review.json`。在 `CORPUS_STATE.json` 中需要人类确认 `corpus_approval`。
+* **[`research-literature-summary`](skills/research-literature-summary/SKILL.md)** (`v1.8.0`)：文献深度综述：单篇论文由独立子代理精读，全局学术演化深度提炼（`overview_summary.md`, `aggregate_report.md`）。在 `SUMMARY_STATE.json` 中需要人类确认 `summary_approval`。
+* **[`wiki-pk-base`](skills/wiki-pk-base/SKILL.md)** (`v1.4.0`)：遵循 Karpathy LLM Wiki 范式的个人知识库（PKBase）：Markdown 知识网链 + 浏览器静态站点可视化，由人挑选知识源，由 Agent 维护索引。
+* **[`research-daily-ideas`](skills/research-daily-ideas/SKILL.md)** (`v1.1.0`)：每日 arXiv 前沿文献流入工具：按研究主题或 Zotero 兴趣抓取最新论文，下载源码与插图，撰写中文深度分析并归档入库。
 
-### 🧠 方案层（Proposal Layer）
+### 🧠 方案与方法层
 
-| Skill | 角色职责 | 触发词示例 |
-|---|---|---|
-| [`research-ideas`](skills/research-ideas/SKILL.md) | 基于文献证据设计研究方案。无用户 idea 时生成 4–6 个候选供显式挑选；锁定用户确认的 `PROBLEM_ANCHOR.md`；多轮独立审查打磨机制；经用户批准后定稿 `FINAL_PROPOSAL.md` | "research ideas", "提出研究方案", "打磨idea", "refine my approach" |
-| [`research-retrofit`](skills/research-retrofit/SKILL.md) | 代码 ↔ 方案反向回填对齐。视代码为实现真相，在 `docs/research-retrofit/CODE_ANALYSIS.md` 中诊断缺口；若涉及问题目标漂移，必须经用户显式批准才能重新下锚 | "update proposal from code", "通过代码更新方案", "retrofit proposal" |
+* **[`research-ideas`](skills/research-ideas/SKILL.md)** (`v6.0.0`)：基于文献证据设计研究方案。无预设 idea 时生成 4–6 个候选供显式挑选；锁定 `PROBLEM_ANCHOR.md`；多轮独立审稿人对抗审查；经用户批准后定稿 `FINAL_PROPOSAL.md`。
+* **[`research-retrofit`](skills/research-retrofit/SKILL.md)** (`v2.0.0`)：代码 ↔ 方案反向回填对齐。视代码为实现真相，在 `docs/research-retrofit/CODE_ANALYSIS.md` 中诊断缺口；若涉及研究目标漂移，必须经用户显式确认方可重新下锚。
 
-### 🧪 实验层（Experiment Layer）
+### 🧪 实验与执行层
 
-| Skill | 角色职责 | 触发词示例 |
-|---|---|---|
-| [`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md) | 将方案转换为 claim 驱动的执行路线图（`EXPERIMENT_PLAN.md`），设定里程碑决策门控与算力上限。计算规范任务投影 `approved_task_inventory` 并初始化单追踪器 `EXPERIMENT_TRACKER.md`。需要人类 `plan_approval` | "experiment plan", "规划实验", "ablation matrix", "run order" |
-| [`research-run-experiment`](skills/research-run-experiment/SKILL.md) | 统一维护 `EXPERIMENT_TRACKER.md` 生命周期。校验任务是否符合核准的计划投影；部署授权任务；监控运行；评估直接比对数据集 Ground Truth 标签；在里程碑或遇阻时暂停等待人类决策 | "run experiment", "跑实验", "launch training", "review log", "实验进度" |
-| [`research-structured-codebase`](skills/research-structured-codebase/SKILL.md) | 模块化、注册表驱动的 PyTorch 训练代码框架骨架（受 Dassl 启发）。作为 `research-run-experiment` 的可选实现助手 | "structured codebase", "代码库架构", "训练框架骨架" |
-| [`research-training-check`](skills/research-training-check/SKILL.md) | 训练质量诊断助手：在训练期间读取指标与日志，诊断学习健康状况（NaN、发散、停滞），向 `docs/research-training-check/` 输出不可变建议报告。绝不直接杀进程或改写追踪器 | "check training", "monitor metrics", "is training healthy", "训练诊断" |
+* **[`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md)** (`v3.0.0`)：将方案转化为 claim 驱动的执行路线图（`EXPERIMENT_PLAN.md`），设定里程碑决策门控与算力上限。计算规范任务投影 `approved_task_inventory` 并初始化单追踪器 `EXPERIMENT_TRACKER.md`。需要人类 `plan_approval`。
+* **[`research-run-experiment`](skills/research-run-experiment/SKILL.md)** (`v4.4.0`)：统一维护 `EXPERIMENT_TRACKER.md` 生命周期。校验任务是否符合核准计划投影；部署授权任务；监控运行；评估直接比对数据集 Ground Truth 标签；在里程碑或遇阻时暂停等待人类决策。
+* **[`research-structured-codebase`](skills/research-structured-codebase/SKILL.md)** (`v2.0.0`)：模块化、注册表驱动的 PyTorch 训练框架骨架（受 Dassl/Detectron2 启发）。作为 `research-run-experiment` 的可选实现助手。
+* **[`research-training-check`](skills/research-training-check/SKILL.md)** (`v2.0.0`)：训练质量诊断助手：在训练期间读取指标与日志，诊断学习健康状况（NaN、发散、停滞），向 `docs/research-training-check/` 输出不可变建议报告。绝不直接杀进程或改写追踪器。
 
-### ✍️ 论文与展示层（Paper & Presentation Layer）
+### ✍️ 论文与展示层
 
-| Skill | 角色职责 | 触发词示例 |
-|---|---|---|
-| [`research-paper-plan`](skills/research-paper-plan/SKILL.md) | 结果整理与论文规划：对照预测值与真实标签审计数据，在 `docs/research-paper-plan/analysis/` 运行绘图脚本，输出真实图表与代码映射，经独立评审后由用户确认 `PAPER_BUNDLE.json` | "paper plan", "论文规划", "规划论文", "整理实验结果" |
-| [`research-paper-writing`](skills/research-paper-writing/SKILL.md) | 细化手稿写作：依据会议模板展开完整章节，程序化核验 BibTeX 引用，将所有数值与图注追溯至结果 ID，真实编译 LaTeX，独立评审后经人类批准定稿手稿 | "write paper", "draft manuscript", "论文写作", "compile paper" |
-| [`research-paper-poster`](skills/research-paper-poster/SKILL.md) | 会议展示生成：从定稿论文与底层数据提炼 60 秒视觉叙事，排版 A0/A1 展板，卡片布局多重检验，导出可编辑与分卡片 PPTX、SVG 及演讲脚本（`POSTER_SPEECH.md`）。关键节点人机确认 | "make poster", "conference poster", "海报制作", "论文海报" |
+* **[`research-paper-plan`](skills/research-paper-plan/SKILL.md)** (`v3.1.0`)：真实数据审计与论文规划：对照预测值与真实标签审计数据，在 `docs/research-paper-plan/analysis/` 运行绘图脚本，输出真实图表与代码映射，经独立评审后由用户确认 `PAPER_BUNDLE.json`。
+* **[`research-paper-writing`](skills/research-paper-writing/SKILL.md)** (`v3.1.0`)：细化手稿写作：依据会议模板（ICLR, NeurIPS, ICML, ACL, AAAI 等）展开完整章节，程序化核验 BibTeX 引用，将所有数值与图注追溯至结果 ID，真实编译 LaTeX，独立评审后经人类批准定稿手稿。
+* **[`research-paper-poster`](skills/research-paper-poster/SKILL.md)** (`v3.1.0`)：会议展示生成：从定稿论文与底层数据提炼 60 秒视觉叙事，排版 A0/A1 展板，卡片布局多重检验，导出可编辑与分卡片 PPTX、SVG 及演讲脚本（`POSTER_SPEECH.md`）。关键节点人机确认。
+
+### 🛡️ 协议与规范层
+
+* **[`research-shared-references`](skills/research-shared-references/SKILL.md)** (`v1.0.0`)：系统全局规范技能，统摄全局人机锚点门控细则（[`anchor-gates.md`](skills/research-shared-references/anchor-gates.md)）、阶段衔接协议与密码学摘要验证规范。
 
 ---
 
-## 典型工作流程（Happy Path）
+## 🚀 典型工作流程（Happy Path）
 
 ```text
 1.  /research-literature-review  ──► 从 Zotero/网络收集论文至规范化 JSON
@@ -200,9 +235,9 @@ Anchor Research:
 
 ---
 
-## 实体产物与状态文件权威层级
+## 📄 实体产物与状态文件权威层级
 
-所有项目状态文件统一存储于项目根目录的 `docs/` 下，均具备明确定义的 Schema 与内容校验哈希，构成整个科研工程的实体锚点：
+所有项目状态文件统一存储于项目根目录的 `docs/` 下，均具备明确定义的 Schema 与内容校验哈希：
 
 | 物理文件位置 | 锚点属性 | 产生 Skill | 主要消费方 |
 |---|---|---|---|
@@ -218,10 +253,33 @@ Anchor Research:
 
 ---
 
-## 阶段衔接门控协议（Stage Handoff Protocol）
+## 🤝 阶段衔接门控协议（Stage Handoff Protocol）
 
-详见核心协议规范文档 [`research-shared-references/anchor-gates.md`](skills/research-shared-references/anchor-gates.md)（或触发 [`research-shared-references`](skills/research-shared-references/SKILL.md)）：
+各阶段间的交接严格执行 [`research-shared-references/anchor-gates.md`](skills/research-shared-references/anchor-gates.md)（或触发 [`research-shared-references`](skills/research-shared-references/SKILL.md)）中定义的**显式 Handoff 规范**：
 
+```json
+{
+  "from_skill": "research-ideas",
+  "to_skill": "research-experiment-plannning",
+  "project_root": "/absolute/path/to/project",
+  "docs_root": "/absolute/path/to/project/docs",
+  "invocation": "/research-experiment-plannning \"/absolute/path/to/project/docs/research-ideas/FINAL_PROPOSAL.md\" project: \"/absolute/path/to/project\"",
+  "proposal_path": "/absolute/path/to/project/docs/research-ideas/FINAL_PROPOSAL.md",
+  "proposal_sha256": "3a8b...4f",
+  "anchor_path": "/absolute/path/to/project/docs/research-ideas/PROBLEM_ANCHOR.md",
+  "anchor_sha256": "9c1e...2d",
+  "method_state_path": "/absolute/path/to/project/docs/research-ideas/REVIEW_STATE.json",
+  "method_state_sha256": "e4f0...7a",
+  "artifacts": [
+    {"role": "proposal", "path": ".../FINAL_PROPOSAL.md", "sha256": "3a8b...4f"},
+    {"role": "anchor", "path": ".../PROBLEM_ANCHOR.md", "sha256": "9c1e...2d"},
+    {"role": "method-state", "path": ".../REVIEW_STATE.json", "sha256": "e4f0...7a"}
+  ],
+  "status": "awaiting_confirmation"
+}
+```
+
+### 阶段流转五大铁律：
 1. **单次仅提一个 Offer**：当且仅当一个阶段实质完成且对应人类锚点已确认批准，系统才会在对话上下文中抛出唯一的 `NEXT_SKILL_HANDOFF` JSON 对象，标记 `status: awaiting_confirmation`。
 2. **密码学摘要强绑定**：Handoff 必须显式枚举下游所需的所有输入文件绝对路径与 SHA-256 字节摘要（结构化数据采用规范 JSON 摘要），拒绝任何模糊的全局扫描或目录推测。
 3. **权限绝不穿透与级联**：用户的单次确认（如回复“继续”或“可以”）**仅授权进入当前被提议的那一个下游技能**。它绝不自动授权后续阶段、绝不自动启动代码运行或模型训练，更绝不授权自动投稿或打印。
@@ -230,12 +288,39 @@ Anchor Research:
 
 ---
 
-## 仓库目录结构
+## 🛠️ 使用方式与环境兼容
+
+Anchor Research 所有技能均为**宿主中立（Host-Neutral）**设计，全面兼容任何支持工具/技能调用的 AI Agent 环境：
+
+### Claude Code / Anthropic Agent
+在项目根目录创建软链接或复制 `skills/` 目录到 `.claude/skills/`：
+```bash
+ln -s /path/to/anchor-research/skills ~/.claude/skills/anchor-research
+```
+
+### VS Code Copilot / 通用 Agent 运行时
+将工作区配置指向 `skills/` 目录，或按需加载具体技能的 `SKILL.md`。
+
+### 常用触发词调用示例：
+- **方案打磨**：`refine my approach: <问题描述>` 或 `打磨idea`
+- **文献调研**：`literature review topic: "Flow Matching for 3D Animation"`
+- **实验规划**：`experiment plan: 设计核心消融实验路线`
+- **执行实验**：`run experiment`（自动选取已批准就绪的下一个 `TODO` 任务）
+- **训练质量诊断**：`check training run: <run_id> metrics: loss, eval_acc`
+- **论文规划与制图**：`paper plan: 审计实验数据并规划论文大纲与图表`
+- **论文手稿写作**：`write paper: 按照 ICLR 2026 模板撰写论文`
+- **展示海报制作**：`make poster: 制作 A0 展板与演讲脚本`
+
+---
+
+## 📜 仓库完整目录结构
 
 ```text
 anchor-research/
 ├── README.md                          # 英文主文档
 ├── README.zh.md                       # 中文主文档
+├── assets/
+│   └── anchor-research-banner.svg     # 核心架构全景矢量图
 └── skills/
     ├── research-shared-references/    # 全局人机锚点门控与协议规范
     │   ├── SKILL.md                   # 规范 Skill 定义与索引
@@ -257,6 +342,6 @@ anchor-research/
 
 ---
 
-## 开源协议
+## 📄 开源许可证
 
 MIT 许可证。作者：Zhihao Li。

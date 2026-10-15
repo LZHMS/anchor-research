@@ -1,251 +1,326 @@
-# Anchor Research
+<div align="center">
 
-> **Anchor first. Automate second.**
+# ⚓ Anchor Research
 
-An **anchor-first automated research (Auto Research) skill system**.
+### *Anchor first. Automate second.*
 
-**[中文版 README → README.zh.md](README.zh.md)**
+**A Human-in-the-Loop Auto Research Skill Framework**
 
-Traditional auto research is "automate first, think later" — you hand a direction to an agent and let it explore on its own: auto-run experiments, auto-stack baselines, auto-rewrite the proposal……
-**and nobody notices when the direction has gone wrong.** By the time the paper is written, it turns out the work solved a different problem than the one you set out to solve — and several GPU-months are gone.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Framework: Anchor-First](https://img.shields.io/badge/Framework-Anchor--First-065F46.svg?style=for-the-badge)](#-what-is-an-anchor)
+[![Skills: 14 Modules](https://img.shields.io/badge/Skills-14%20Integrated-7C3AED.svg?style=for-the-badge)](#-skills-index)
+[![Runtime: Host-Neutral](https://img.shields.io/badge/Runtimes-Claude%20Code%20%7C%20Copilot%20%7C%20Neutral-2563EB.svg?style=for-the-badge)](#-usage--runtime-compatibility)
 
-**Anchor Research does the opposite: drop an anchor at every stage before automating.**
-An "anchor" is not just the Problem Anchor at the start — it is **a chain of human checkpoints that runs through the entire pipeline**. The output of every stage (corpus scope, evidence landscape, problem definition, method proposal, experiment plan, per-run milestone decisions, paper storyline, compiled manuscript, poster presentation) must first be **presented to the researcher, discussed, and explicitly confirmed as an anchor** before downstream automation is allowed to proceed. Every stage re-reads and cryptographically binds the upstream anchors to answer the question: *"am I still solving the right problem?"*
+<br>
 
-```
-Classic auto research:   idea ──► unguided auto-exploration ──► paper (direction drifted long ago, unnoticed)
+<p align="center">
+  <a href="#readme"><b>English</b></a> •
+  <a href="README.zh.md"><b>简体中文</b></a>
+</p>
 
-Anchor Research:
-                         literature review & summary
-                            │  📌 Anchor 0: Corpus scope & Evidence landscape (confirmed with you)
-                            ▼
-                         research ideas
-                            │  📌 Anchor 1: Problem Anchor (problem definition & constraints confirmed with you)
-                            │  📌 Anchor 2: Core contribution / FINAL_PROPOSAL (approach confirmed with you)
-                            ▼
-                         experiment planning
-                            │  📌 Anchor 3: Core claims + task inventory + decision gates (confirmed with you)
-                            ▼
-                         run & monitor
-                            │  📌 Anchor 4: Run records & Milestone decisions (drift → pause, discuss with human)
-                            ▼
-                         paper planning
-                            │  📌 Anchor 5: Audited results, plots & paper storyline (confirmed with you)
-                            ▼
-                         paper writing
-                            │  📌 Anchor 6: Complete compiled manuscript & claim verification (confirmed with you)
-                            ▼
-                         poster & delivery
-                            │  📌 Anchor 7: Poster visual layout & talk script (confirmed with you)
-                            ▼
-                         delivery complete
-```
+<br>
 
-**Every stage = one anchoring (human + agent alignment) + one anchor-constrained automated execution.**
+<img src="assets/anchor-research-banner.svg" alt="Anchor Research System Architecture" width="100%">
+
+<br>
+
+[🎯 Motivation](#-why-anchor-research) •
+[⚓ What is an Anchor](#-what-is-an-anchor) •
+[🏛️ Architecture](#-system-architecture) •
+[📦 Skills Index](#-skills-index) •
+[🚀 Workflow](#-typical-workflow-the-happy-path) •
+[📄 Artifacts](#-concrete-artifact-hierarchy) •
+[🤝 Handoff Protocol](#-stage-handoff-protocol)
+
+</div>
 
 ---
 
-## What Is an "Anchor"
+## 🎯 Why Anchor Research?
 
-An anchor is **a concrete decision that has been discussed with the researcher and committed at the end of a stage**. It has three essential properties:
+Traditional automated research (Auto Research) operates under the fallacy of **"automate first, think later"**:
+1. You give a general direction or broad question to an autonomous agent.
+2. The agent runs in an unguided feedback loop: autonomously generating code, executing training runs, selecting baselines, and rewriting proposals.
+3. **Nobody notices when the scientific objective silently drifts.**
 
-1. **Confirmed** — It is not a one-sided agent artifact or optimistic progress flag; it is a conclusion explicitly approved by the human researcher (confirm-then-commit). Neither a high LLM review score, an executed script, nor silence/timeout can substitute for human approval.
-2. **Verifiable** — Every subsequent stage re-reads the upstream anchors via exact content SHA-256 byte hashes and canonical JSON digests (`anchor check`) to detect drift.
-3. **Authoritative** — Anchors outrank the agent's autonomous decisions. On conflict, automation must either obey the anchor or pause and ask the human to re-anchor.
+By the time the paper draft is generated, it often solves an easier, uninteresting toy problem rather than your original bottleneck. **Dozens of GPU-weeks and months of research time are squandered on an ungrounded hallucination.**
 
-### The Complete Anchor Chain Across the Pipeline
+> [!IMPORTANT]
+> **Anchor Research reverses this model: Drop an immutable anchor at every stage before automating.**
+> An **Anchor** is not just an initial prompt; it is a **continuous chain of cryptographic human checkpoints** across the entire research lifecycle. No downstream code execution, experiment deployment, or manuscript drafting is permitted until the previous stage's decisions are **inspected, discussed, and explicitly approved by the researcher**.
 
-| # | Stage | Anchor (artifact) | How it aligns with the human | Owned by |
-|---|-------|-------------------|------------------------------|----------|
-| 0a | Literature review | **Corpus scope** (`CORPUS_STATE.json`) | Displays source coverage, merged paper counts, and evidence limits; requires `corpus_approval` before summary can be offered | `research-literature-review` |
-| 0b | Literature summary | **Evidence landscape** (`SUMMARY_STATE.json`) | Displays cross-paper synthesis, open gaps, and limitations; requires `summary_approval` before ideas generation | `research-literature-summary` |
-| 1 | Problem framing | **Problem Anchor** (`PROBLEM_ANCHOR.md`) | In literature-driven mode, displays 4–6 candidates for explicit route selection; drafts anchor and requires `anchor_approval` before method synthesis | `research-ideas` |
-| 2 | Method proposal | **Core contribution / method proposal** (`FINAL_PROPOSAL.md`) | One dominant mechanism delta; fresh independent host-subagent review; requires explicit `proposal_approval` before replacing canonical exports | `research-ideas` |
-| 3 | Experiment planning | **Core claims + task inventory** (`EXPERIMENT_PLAN.md` + `EXPERIMENT_PLAN_STATE.json`) | Claims, success criteria, milestone stop/go gates, compute budget ceiling; requires `plan_approval` on canonical task projection | `research-experiment-plannning` |
-| 4 | Experiment execution | **Run records & milestones** (`EXPERIMENT_TRACKER.md`) | Verifies approved plan projection; milestone human decision gates pause execution for user review; unexpected drift or failed runs pause for human strategy decisions (no automatic kill or timeout auto-resume) | `research-run-experiment` |
-| 5 | Paper planning | **Audited results, figures & storyline** (`PAPER_PLAN.md` + `PAPER_BUNDLE.json`) | Audits raw metrics against saved predictions/ground truth; generates runnable analysis, tables, and plots; independent review; requires `outline_approval` on exact bundle before writing | `research-paper-plan` |
-| 6 | Paper writing | **Compiled manuscript** (`main.tex` + `main.pdf` + `MANUSCRIPT_MANIFEST.json`) | Expands approved plan into full sections; traces every number/caption to prepared results; verifies citations; compiles with real LaTeX; independent review; requires `manuscript_approval` before poster handoff | `research-paper-writing` |
-| 7 | Poster & delivery | **Visual conference presentation** (`main.pdf` + `poster.pptx` + `poster.svg` + `POSTER_SPEECH.md`) | Organizes final paper and bound data into a 60-second visual story; content plan and card layout checkpoints require user confirmation; visual inspection + independent review | `research-paper-poster` |
+### ⚖️ Auto Research vs. Anchor Research
 
-> **Note on Re-anchoring**: Anchors are not "read-only fossils." When the codebase and the proposal diverge substantially, `research-retrofit` uses the code as Ground Truth for what was *implemented*, but **NOT authority over what problem the researcher intends to solve**. It diagnoses discrepancies, drafts reconciliation in `docs/research-retrofit/`, and **asks the researcher whether to re-anchor the problem or adjust the implementation**, rather than letting the agent quietly change course.
+| Feature | ❌ Traditional Auto Research | ⚓ Anchor Research |
+|---|---|---|
+| **Human Role** | Spectator at the end (or debugger when it crashes) | **Pilot at every decision gate (Human-in-the-Loop)** |
+| **Stage Progression** | Autonomous cascading without human alignment | **Explicit single-stage handoff with cryptographic hash binding** |
+| **Goal Drift Handling** | Silent topic substitution to achieve higher scores | **Drift warnings halt new work; mandatory human re-anchoring** |
+| **Code vs. Problem** | Code changes silently rewrite the research problem | **Code is implementation truth, NOT authority over user problem** |
+| **Metric Verification** | Self-reported agent numbers or synthetic mocks | **Audited normalization vs. raw predictions & ground-truth labels** |
+| **Execution Permission** | Automatic background scripts & process control | **Separated permissions: Entry ≠ Approval ≠ Consequential Action** |
 
 ---
 
-## System Architecture
+## ⚓ What Is an "Anchor"?
 
-Every skill is an "automation executor"; what actually keeps the direction correct are the **📌 anchors** slotted between them. Automated outputs must pass anchor confirmation before they can become the input of the next stage.
+An anchor is **a concrete decision that has been presented to the researcher, discussed, explicitly confirmed, and committed as an immutable state at a stage boundary**.
 
+It possesses three non-negotiable properties:
+
+1. 🔒 **Explicitly Confirmed (Confirm-then-Commit)**:
+   It is never an optimistic progress flag or an automated agent guess. An anchor exists only when an actual human affirmatively approves the exact presented content. **An LLM review score, a passing test script, silence, or a timeout can never substitute for human confirmation.**
+2. 🔍 **Verifiable & Cryptographically Bound**:
+   Every subsequent stage verifies the upstream anchors through exact file-byte SHA-256 hashes and canonical JSON digests (`anchor check`), immediately detecting any unauthorized tampering or accidental drift.
+3. 👑 **Authoritative Over Automation**:
+   Anchors outrank autonomous agent heuristics. When automated experiments conflict with an anchor, execution must **pause and consult the researcher** rather than quietly shifting direction.
+
+---
+
+## 🔗 The 8-Stage Anchor Chain
+
+```mermaid
+graph TD
+    A["0a. Literature Review<br><b>CORPUS_STATE.json</b>"] -->|"📌 Anchor 0a: Corpus Scope"| B["0b. Literature Summary<br><b>SUMMARY_STATE.json</b>"]
+    B -->|"📌 Anchor 0b: Evidence Landscape"| C["1. Problem Definition<br><b>PROBLEM_ANCHOR.md</b>"]
+    C -->|"📌 Anchor 1: Problem Anchor"| D["2. Method Proposal<br><b>FINAL_PROPOSAL.md</b>"]
+    D -->|"📌 Anchor 2: Core Mechanism"| E["3. Experiment Planning<br><b>EXPERIMENT_PLAN.md</b>"]
+    E -->|"📌 Anchor 3: Task Projection"| F["4. Experiment Execution<br><b>EXPERIMENT_TRACKER.md</b>"]
+    F -->|"📌 Anchor 4: Milestones & Runs"| G["5. Paper Planning<br><b>PAPER_BUNDLE.json</b>"]
+    F -.->|"↺ Drift Detected"| R["Re-anchoring<br><b>research-retrofit</b>"]
+    R -.->|"Human Re-Anchor Gate"| C
+    G -->|"📌 Anchor 5: Audited Results"| H["6. Paper Writing<br><b>MANUSCRIPT_MANIFEST.json</b>"]
+    H -->|"📌 Anchor 6: Compiled Paper"| I["7. Poster & Presentation<br><b>POSTER_STATE.json</b>"]
 ```
- ┌─ Knowledge & Literature ────────────────────────────────────────────────────────┐
- │  wiki-pk-base (PKBase) / research-daily-ideas (daily feeder)                    │
+
+| # | Stage | Anchor Artifact | What Gets Confirmed with You | Responsible Skill |
+|---|---|---|---|---|
+| **0a** | Literature Review | `CORPUS_STATE.json` | Corpus query coverage, deduplicated paper inventory, enabled sources, and evidence boundaries | [`research-literature-review`](skills/research-literature-review/SKILL.md) |
+| **0b** | Literature Summary | `SUMMARY_STATE.json` | Cross-paper synthesis, open research gaps, method lineages, and abstraction limits | [`research-literature-summary`](skills/research-literature-summary/SKILL.md) |
+| **1** | Problem Framing | `PROBLEM_ANCHOR.md` | In literature-driven mode, 4–6 candidates are ranked; you pick the route, then explicitly approve the drafted problem bottleneck and non-goals | [`research-ideas`](skills/research-ideas/SKILL.md) |
+| **2** | Method Proposal | `FINAL_PROPOSAL.md` | Single dominant mechanism delta, parsimonious formulation, and minimal claim-validation sketch after independent review | [`research-ideas`](skills/research-ideas/SKILL.md) |
+| **3** | Experiment Planning | `EXPERIMENT_PLAN.md`<br>+ `EXPERIMENT_PLAN_STATE.json` | Falsifiable claims, milestone stop/go gates, compute budget ceiling, and approved task projection | [`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md) |
+| **4** | Experiment Execution | `EXPERIMENT_TRACKER.md` | Single tracker lifecycle; deployment checks approved task projection; failures or milestone gates pause for your strategy decisions | [`research-run-experiment`](skills/research-run-experiment/SKILL.md) |
+| **5** | Paper Planning | `PAPER_PLAN.md`<br>+ `PAPER_BUNDLE.json` | Audited metric normalization vs. saved ground truth; runnable plotting code; tables & plots; paper storyline User Confirmation Loop | [`research-paper-plan`](skills/research-paper-plan/SKILL.md) |
+| **6** | Paper Writing | `main.pdf` + `main.tex`<br>+ `MANUSCRIPT_MANIFEST.json` | Full section composition using conference templates; verified citations; 100% number-to-result traceability ledger; human approval of final manuscript | [`research-paper-writing`](skills/research-paper-writing/SKILL.md) |
+| **7** | Presentation Delivery | `main.pdf` + `poster.pptx`<br>+ `poster.svg` + `POSTER_SPEECH.md` | 60-second visual storyline; content plan and card layout checkpoints require explicit human approval; multi-format verified exports | [`research-paper-poster`](skills/research-paper-poster/SKILL.md) |
+
+> [!NOTE]
+> **Re-Anchoring vs. Problem Drift (`research-retrofit`)**:
+> When implementation code diverges from the written proposal, `research-retrofit` reverse-engineers the codebase. **Code is ground truth for what was implemented, NOT authority over the researcher's goal.** If problem drift is identified, the skill pauses and asks you: *Should we adjust the implementation to match the original anchor, or do you explicitly confirm re-anchoring the problem?*
+
+---
+
+## 🏛️ System Architecture
+
+Anchor Research is organized into 5 cooperative functional tiers, governed by the central protocol skill [`research-shared-references`](skills/research-shared-references/SKILL.md):
+
+```text
+ ┌─ 1. Knowledge & Literature Layer ───────────────────────────────────────────────┐
+ │  wiki-pk-base (Persistent PKBase Vault)  ◄──►  research-daily-ideas (Daily Feed)│
  │        │                                                                        │
  │        ▼                                                                        │
- │  research-literature-review ──📌 Anchor 0a (Corpus Scope Approval)──►          │
- │  research-literature-summary ──📌 Anchor 0b (Evidence Landscape Approval)──►    │
+ │  research-literature-review  ──► 📌 Anchor 0a: Corpus Scope Approval            │
+ │        │                                                                        │
+ │        ▼                                                                        │
+ │  research-literature-summary ──► 📌 Anchor 0b: Evidence Landscape Approval      │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ Proposal Layer ────────────────────────────────────────────────────────────────┐
+ ┌─ 2. Research Proposal Layer ────────────────────────────────────────────────────┐
  │  research-ideas:                                                                │
- │    Route selection ──► 📌 Anchor 1: PROBLEM_ANCHOR.md (Human Approval)          │
- │    Method synthesis ──► Independent Review ──► 📌 Anchor 2: FINAL_PROPOSAL.md   │
+ │    Candidate Selection (4–6 choices) ──► 📌 Anchor 1: PROBLEM_ANCHOR.md         │
+ │    Method Synthesis ──► Multi-round Review ──► 📌 Anchor 2: FINAL_PROPOSAL.md   │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ Experiment Layer ──────────────────────────────────────────────────────────────┐
+ ┌─ 3. Experimentation Layer ──────────────────────────────────────────────────────┐
  │  research-experiment-plannning:                                                 │
- │    Claim mapping ──► Milestone gates ──► 📌 Anchor 3: EXPERIMENT_PLAN.md        │
- │    Approved Task Inventory Projection (Human Approval)                          │
+ │    Roadmap & Milestones ──► 📌 Anchor 3: Approved Task Projection               │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-run-experiment:                                                       │
- │    Deploy authorized runs ──► Evaluate vs ground truth                          │
- │    Helper 1: research-structured-codebase (modular registry training framework) │
- │    Helper 2: research-training-check (advisory quality monitoring reports)      │
- │    📌 Anchor 4: Run Tracker + Milestone human decision gates                    │
- │    (Drift / failure / budget limit → pause new work, discuss with researcher)   │
+ │    Reconcile tracker ──► Deploy authorized runs ──► Evaluate vs. Ground Truth   │
+ │    [Helper] research-structured-codebase (Registry-driven PyTorch framework)    │
+ │    [Helper] research-training-check (Read-only training quality diagnostics)    │
+ │    📌 Anchor 4: Milestone Human Decision Gates & Failure Pauses                 │
  └──────────────────────────────────────────┬──────────────────────────────────────┘
                                             ▼
- ┌─ Paper & Delivery Layer ────────────────────────────────────────────────────────┐
+ ┌─ 4. Paper & Delivery Layer ─────────────────────────────────────────────────────┐
  │  research-paper-plan:                                                           │
- │    Audited results normalization + runnable plots/tables generation             │
- │    Storyline planning ──► 📌 Anchor 5: PAPER_PLAN.md & Bundle (User Approval)   │
+ │    Audit metrics vs predictions ──► Execute plotting scripts ──► Build tables   │
+ │    📌 Anchor 5: PAPER_BUNDLE.json & Narrative Storyline (Human Confirmation)    │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-paper-writing:                                                        │
- │    Detailed composition ──► LaTeX compilation ──► Independent Review            │
- │    📌 Anchor 6: MANUSCRIPT_MANIFEST.json & Complete Manuscript (Human Approval) │
+ │    Draft sections ──► Programmatic citation verification ──► Real LaTeX compile │
+ │    📌 Anchor 6: MANUSCRIPT_MANIFEST.json & Final Manuscript (Human Approval)    │
  │        │                                                                        │
  │        ▼                                                                        │
  │  research-paper-poster:                                                         │
- │    📌 Anchor 7: Poster content plan & card layout checkpoints (Human Approval)  │
- │    A0/A1 PDF + Native/Component PPTX + SVG + Talk script                        │
+ │    📌 Anchor 7: Poster Content Plan & Card Grid Checkpoints (Human Approval)    │
+ │    A0/A1 Print PDF + Native & Component PPTX + SVG + Presentation Script        │
  └─────────────────────────────────────────────────────────────────────────────────┘
 
- ↺ research-retrofit: Code ↔ proposal alignment. Analyzes code as implementation
-   ground truth, drafts reconciliation, and asks human whether to re-anchor
-   PROBLEM_ANCHOR.md before updating canonical files.
+ ↺ research-retrofit: Bridges code back to proposal. Reverse-engineers code,
+   detects implementation gaps, and initiates a formal human re-anchoring gate.
 ```
 
-Re-reading anchors is the norm, not the exception:
-- `research-ideas` verifies the frozen problem anchor before and after every review round.
-- `research-experiment-plannning` verifies that planned runs test the approved claims without benchmark sprawl.
-- `research-run-experiment` checks that every deploy task matches the approved task inventory projection.
-- `research-paper-plan` audits actual result data and builds a claim-to-evidence matrix before planning the paper.
-- `research-paper-writing` traces every numeric claim and caption directly back to the audited result IDs.
-- `research-paper-poster` binds figures and statistics strictly to the compiled paper and underlying data.
+---
 
-If any stage detects drift, the pipeline **pauses and consults the researcher** — it never marches forward with a known misalignment.
+## 📦 Skills Index
+
+The repository provides **14 host-neutral skills** under `skills/`:
+
+### 📚 Literature & Knowledge
+
+* **[`research-literature-review`](skills/research-literature-review/SKILL.md)** (`v2.7.0`): Multi-source paper search across Zotero, PKBase, Obsidian notes, and arXiv. Normalizes into unified `research_foundation_review.json`. Requires `corpus_approval`.
+* **[`research-literature-summary`](skills/research-literature-summary/SKILL.md)` (`v1.8.0`): Deep paper comprehension using one isolated subagent per paper, followed by global landscape synthesis (`overview_summary.md`, `aggregate_report.md`). Requires `summary_approval`.
+* **[`wiki-pk-base`](skills/wiki-pk-base/SKILL.md)** (`v1.4.0`): Persistent Personal Knowledge Base (PKBase) following Karpathy's LLM Wiki pattern. Interlinked Markdown vault with a live browser site showcase.
+* **[`research-daily-ideas`](skills/research-daily-ideas/SKILL.md)** (`v1.1.0`): Daily arXiv preprint harvester matching research topics or Zotero profiles. Downloads TeX/figures, writes analyses, and files to PKBase.
+
+### 🧠 Proposal & Methodology
+
+* **[`research-ideas`](skills/research-ideas/SKILL.md)** (`v6.0.0`): Proposal design grounded in literature evidence. Offers 4–6 distinct candidates for human selection; locks `PROBLEM_ANCHOR.md`; conducts adversarial subagent reviews; commits `FINAL_PROPOSAL.md` upon explicit user approval.
+* **[`research-retrofit`](skills/research-retrofit/SKILL.md)** (`v2.0.0`): Reverse-engineers implemented code against research reports. Formulates gap analyses (`CODE_ANALYSIS.md`) and conducts human re-anchoring gates before updating canonical files.
+
+### 🧪 Experimentation & Execution
+
+* **[`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md)** (`v3.0.0`): Claim-driven validation roadmap (`EXPERIMENT_PLAN.md`) with milestone stop/go gates and compute budgets. Generates `approved_task_inventory` projection and initializes single tracker `EXPERIMENT_TRACKER.md`. Requires human `plan_approval`.
+* **[`research-run-experiment`](skills/research-run-experiment/SKILL.md)** (`v4.4.0`): Single tracker lifecycle manager. Reconciles runs against the approved task projection, deploys authorized jobs, monitors training, evaluates predictions against dataset labels, and pauses for human decision on milestone gates or drift.
+* **[`research-structured-codebase`](skills/research-structured-codebase/SKILL.md)** (`v2.0.0`): Modular, registry-driven PyTorch framework template (inspired by Dassl/Detectron2). Optional implementation assistant for `research-run-experiment`.
+* **[`research-training-check`](skills/research-training-check/SKILL.md)** (`v2.0.0`): Quality diagnostic helper. Reads real-time training metrics/logs, diagnoses learning health (NaNs, divergence, plateaus), and outputs immutable advisory reports to `docs/research-training-check/`. Never terminates processes or alters the tracker.
+
+### ✍️ Paper & Presentation
+
+* **[`research-paper-plan`](skills/research-paper-plan/SKILL.md)** (`v3.1.0`): Empirical data audit and narrative planning. Recomputes metrics from stored predictions and ground truth; runs plotting code in `docs/research-paper-plan/analysis/`; builds publication tables and vector plots; establishes code-to-claim tracing; requires human confirmation on `PAPER_BUNDLE.json`.
+* **[`research-paper-writing`](skills/research-paper-writing/SKILL.md)** (`v3.1.0`): Detailed manuscript composition using official conference templates (ICLR, NeurIPS, ICML, ACL, AAAI). Features programmatic citation verification, 100% numerical traceability ledger, real LaTeX compilation, independent review, and human manuscript approval.
+* **[`research-paper-poster`](skills/research-paper-poster/SKILL.md)** (`v3.1.0`): Conference presentation generator. Distills a 60-second visual story from the final paper and data. Renders A0/A1 posters, checks card layout, conducts visual inspection, and exports editable/component PPTX, SVG, and talk script (`POSTER_SPEECH.md`).
+
+### 🛡️ Protocols & Standards
+
+* **[`research-shared-references`](skills/research-shared-references/SKILL.md)** (`v1.0.0`): System-wide specifications governing human anchor gates ([`anchor-gates.md`](skills/research-shared-references/anchor-gates.md)), stage handoffs, cryptographic digests, and anti-drift contracts.
 
 ---
 
-## Skills Overview
-
-All 12 skills reside under `skills/` and operate host-neutrally (compatible with Claude Code, VS Code Copilot, OpenCodeInterpreter, etc.) without hardcoded vendor CLI commands or proprietary API bindings:
-
-### 📚 Literature & Knowledge Layer
-
-| Skill | Role | Triggers |
-|---|---|---|
-| [`research-literature-review`](skills/research-literature-review/SKILL.md) | Multi-source literature retrieval (Zotero, PKBase, Obsidian, Web/arXiv), de-duplication, and canonical normalization into `research_foundation_review.json`. Requires `corpus_approval` in `CORPUS_STATE.json` | "find papers", "literature review", "文献调研" |
-| [`research-literature-summary`](skills/research-literature-summary/SKILL.md) | Deep literature summarization: per-paper analysis agents + global landscape synthesis (`overview_summary.md`, `aggregate_report.md`). Requires `summary_approval` in `SUMMARY_STATE.json` | "summarize literature", "analyze papers", "文献综述" |
-| [`wiki-pk-base`](skills/wiki-pk-base/SKILL.md) | Persistent Personal Knowledge Base (PKBase) following Karpathy's LLM Wiki pattern: interlinked Markdown vault + static browser showcase. Curated by human, maintained by agent | "wiki", "knowledge base", "PKBase", "知识库" |
-| [`research-daily-ideas`](skills/research-daily-ideas/SKILL.md) | Optional daily discovery feeder: fetches latest arXiv preprints by topic or Zotero profile, downloads sources/figures, writes analyses, files to PKBase | "今日论文", "daily ideas", "arxiv daily" |
-
-### 🧠 Proposal Layer
-
-| Skill | Role | Triggers |
-|---|---|---|
-| [`research-ideas`](skills/research-ideas/SKILL.md) | Literature-grounded research proposal design. Literature-driven mode offers 4–6 candidates for explicit user selection; freezes `PROBLEM_ANCHOR.md` upon human approval; conducts multi-round independent review; commits `FINAL_PROPOSAL.md` upon explicit user proposal approval | "research ideas", "提出研究方案", "打磨idea", "refine my approach" |
-| [`research-retrofit`](skills/research-retrofit/SKILL.md) | Code ↔ proposal reconciliation. Treats implemented code as ground truth for implementation. Performs gap analysis in `docs/research-retrofit/CODE_ANALYSIS.md`, drafts reconciliation, and requires human re-anchoring decision before updating canonical files | "update proposal from code", "通过代码更新方案", "retrofit proposal" |
-
-### 🧪 Experiment Layer
-
-| Skill | Role | Triggers |
-|---|---|---|
-| [`research-experiment-plannning`](skills/research-experiment-plannning/SKILL.md) | Converts proposal into a claim-driven roadmap (`EXPERIMENT_PLAN.md`) with execution order, milestone decision gates, and compute budget ceiling. Projects canonical `approved_task_inventory` and initializes single tracker `EXPERIMENT_TRACKER.md`. Requires human `plan_approval` | "experiment plan", "规划实验", "ablation matrix", "run order" |
-| [`research-run-experiment`](skills/research-run-experiment/SKILL.md) | Manages single `EXPERIMENT_TRACKER.md` lifecycle. Reconciles tasks against approved planning projection, deploys authorized runs, monitors training, evaluates predictions directly against dataset ground truth, and pauses for human decision on milestone gates or drift | "run experiment", "跑实验", "launch training", "review log", "实验进度" |
-| [`research-structured-codebase`](skills/research-structured-codebase/SKILL.md) | Modular, registry-driven PyTorch training framework skeleton (inspired by Dassl/Detectron2). Optional implementation helper for `research-run-experiment` | "structured codebase", "代码库架构", "训练框架骨架" |
-| [`research-training-check`](skills/research-training-check/SKILL.md) | Quality diagnostic helper: reads metrics/logs during training, assesses learning quality (NaN, divergence, stagnation), writes immutable reports to `docs/research-training-check/diagnosis-NNNN.md`, and reports advisory recommendations up to the execution owner. Never kills processes or modifies tracker directly | "check training", "monitor metrics", "is training healthy", "训练诊断" |
-
-### ✍️ Paper & Presentation Layer
-
-| Skill | Role | Triggers |
-|---|---|---|
-| [`research-paper-plan`](skills/research-paper-plan/SKILL.md) | Result preparation and narrative planning: audits metrics against saved predictions/ground truth, executes runnable analysis under `docs/research-paper-plan/analysis/`, produces real tables and plots, maps code-to-claims, conducts independent review, and requires user confirmation on `PAPER_BUNDLE.json` | "paper plan", "论文规划", "规划论文", "整理实验结果" |
-| [`research-paper-writing`](skills/research-paper-writing/SKILL.md) | Detailed manuscript drafting: expands approved plan into complete sections using venue templates, programmatically verifies citations, traces every number to audited result IDs, compiles with LaTeX, conducts independent review, and requires human manuscript approval | "write paper", "draft manuscript", "论文写作", "compile paper" |
-| [`research-paper-poster`](skills/research-paper-poster/SKILL.md) | Conference poster generation: extracts 60-second visual story from final paper and underlying data, formats A0/A1 LaTeX poster, checks card layout, performs visual rendering review, and exports editable/component PPTX, SVG, and talk script (`POSTER_SPEECH.md`). Checkpoints require human confirmation | "make poster", "conference poster", "海报制作", "论文海报" |
-
----
-
-## Typical Workflow (Happy Path)
+## 🚀 Typical Workflow: The Happy Path
 
 ```text
-1.  /research-literature-review  ──► Collect papers from Zotero/Web into unified JSON
-        📌 Human Anchor: Confirm corpus scope, sources, and evidence boundaries
-2.  /research-literature-summary ──► Generate deep per-paper analyses and global landscape
-        📌 Human Anchor: Confirm synthesized evidence landscape and open gaps
-3.  /research-ideas              ──► Generate 4–6 candidates from literature gaps
-        📌 Human Anchor: Select candidate route
+1.  /research-literature-review  ──► Search Zotero & Web into research_foundation_review.json
+        📌 Human Anchor: Confirm corpus scope, enabled sources, and paper inventory
+2.  /research-literature-summary ──► Run per-paper analyzers & synthesize landscape report
+        📌 Human Anchor: Confirm synthesized evidence landscape and identified gaps
+3.  /research-ideas              ──► Generate 4–6 candidate directions from evidence gaps
+        📌 Human Anchor: Choose your preferred candidate route
         📌 Human Anchor: Approve drafted Problem Anchor (bottleneck + non-goals)
-        ├── Multi-round independent host-subagent review & refinement
-        📌 Human Anchor: Approve final method proposal (FINAL_PROPOSAL.md)
-4.  /research-experiment-plannning ──► Translate claims into milestone blocks & task inventory
-        📌 Human Anchor: Approve experiment plan, decision gates, and compute budget
-5.  /research-run-experiment     ──► Deploy authorized runs, evaluate predictions vs labels
-        ├── (Optional) /research-structured-codebase for registry-driven model code
-        ├── (Optional) /research-training-check for bounded metric diagnostics
+        ├── Multi-round independent host-subagent review & iterative refinement
+        📌 Human Anchor: Approve finalized method proposal (FINAL_PROPOSAL.md)
+4.  /research-experiment-plannning ──► Translate claims into milestone blocks & task roadmap
+        📌 Human Anchor: Approve experiment plan, decision gates, and compute budget cap
+5.  /research-run-experiment     ──► Deploy authorized runs, evaluate predictions vs. ground truth
+        ├── (Optional) /research-structured-codebase for modular architecture
+        ├── (Optional) /research-training-check for metric health diagnostics
         📌 Human Anchor: Milestone decision gates & failure recovery require human decision
-6.  [If code diverges] /research-retrofit ──► Code analysis & gap identification
-        📌 Human Anchor: Re-anchoring decision (adjust code vs re-anchor problem)
-7.  /research-paper-plan         ──► Audit raw results, execute plotting, plan storyline
-        ├── Runnable analysis, CSV/LaTeX tables, real PDF/SVG/PNG plots
+6.  [If implementation drifts] /research-retrofit ──► Code analysis & gap diagnostics
+        📌 Human Anchor: Decide whether to adjust implementation or re-anchor the problem
+7.  /research-paper-plan         ──► Audit raw metrics, execute plotting scripts, plan story
+        ├── Generates runnable analysis, publication CSV/LaTeX tables, vector plots
         ├── Independent review of claim-evidence matrix & code trace
-        📌 Human Anchor: User Confirmation Loop on exact PAPER_BUNDLE.json
-8.  /research-paper-writing      ──► Draft complete sections using conference template
+        📌 Human Anchor: User Confirmation Loop approving the exact PAPER_BUNDLE.json
+8.  /research-paper-writing      ──► Draft complete manuscript with official conference template
         ├── Verified BibTeX citations & numeric assertion traceability ledger
-        ├── Real LaTeX compilation & independent review
-        📌 Human Anchor: Approve final compiled manuscript & manifest
+        ├── Real LaTeX compiler execution & independent AC review
+        📌 Human Anchor: Approve final compiled manuscript & MANUSCRIPT_MANIFEST.json
 9.  /research-paper-poster       ──► Generate A0/A1 poster, PPTX/SVG exports & talk script
         📌 Human Anchor: Confirm poster content plan and visual card layout
 ```
 
 ---
 
-## The Concrete Artifact Hierarchy
+## 📄 Concrete Artifact Hierarchy
 
-All project state lives within standard project documentation directories under `docs/`. State files are concrete, verifiable anchors:
+All project state lives within standard directories under `docs/`. State files are concrete, verifiable anchors:
 
-| File | Anchor Nature | Produced By | Consumed By |
+| File Path | Nature of the Anchor | Author Skill | Primary Consumers |
 |---|---|---|---|
 | `docs/research-literature-review/CORPUS_STATE.json` | Corpus Scope Anchor | `research-literature-review` | `research-literature-summary` |
 | `docs/research-literature-summary/SUMMARY_STATE.json` | Evidence Landscape Anchor | `research-literature-summary` | `research-ideas` |
-| `docs/research-ideas/PROBLEM_ANCHOR.md` | Problem Definition Anchor: immutable problem, bottleneck, non-goals | `research-ideas` / `research-retrofit` | All downstream skills |
-| `docs/research-ideas/FINAL_PROPOSAL.md` | Method Proposal Anchor: core mechanism delta & minimal validation | `research-ideas` / `research-retrofit` | Planning, runner, paper |
-| `docs/research-experiment-plannning/EXPERIMENT_PLAN.md` | Experiment Strategy Anchor: claims, success criteria, milestone gates | `research-experiment-plannning` | Runner, retrofit, paper |
-| `docs/research-experiment-plannning/EXPERIMENT_TRACKER.md` | Execution Record Anchor: single tracker, actual metrics, file changes | `research-experiment-plannning` / `research-run-experiment` | Researcher + downstream |
-| `docs/research-paper-plan/PAPER_PLAN.md` + `PAPER_BUNDLE.json` | Narrative & Evidence Anchor: audited data, tables, figures, story | `research-paper-plan` | `research-paper-writing` |
-| `docs/research-paper-writing/MANUSCRIPT_MANIFEST.json` | Manuscript Anchor: final PDF, TeX includes, build log, review | `research-paper-writing` | `research-paper-poster` |
-| `docs/research-paper-poster/POSTER_STATE.json` | Delivery Anchor: poster PDF, PPTX, SVG, speech script, review log | `research-paper-poster` | Researcher (presentation) |
+| `docs/research-ideas/PROBLEM_ANCHOR.md` | Immutable Problem Anchor (Bottleneck & Non-Goals) | `research-ideas` / `research-retrofit` | All downstream skills (Anti-Drift Baseline) |
+| `docs/research-ideas/FINAL_PROPOSAL.md` | Method Proposal Anchor (Dominant Delta & Minimal Test) | `research-ideas` / `research-retrofit` | Planning, runner, paper-plan |
+| `docs/research-experiment-plannning/EXPERIMENT_PLAN.md` | Strategy Anchor (Claims, Criteria & Milestones) | `research-experiment-plannning` | Runner, retrofit, paper-plan |
+| `docs/research-experiment-plannning/EXPERIMENT_TRACKER.md` | Execution Record Anchor (Single Tracker, Metrics & Logs) | `research-experiment-plannning` / `research-run-experiment` | Researcher + downstream |
+| `docs/research-paper-plan/PAPER_PLAN.md` + `PAPER_BUNDLE.json` | Narrative & Evidence Anchor (Audited Data, Plots & Story) | `research-paper-plan` | `research-paper-writing` |
+| `docs/research-paper-writing/MANUSCRIPT_MANIFEST.json` | Manuscript Anchor (PDF, TeX Includes, Build Log, Reviews) | `research-paper-writing` | `research-paper-poster` |
+| `docs/research-paper-poster/POSTER_STATE.json` | Delivery Anchor (Poster PDF, PPTX, SVG, Speech Script) | `research-paper-poster` | Researcher (Presentation) |
 
 ---
 
-## Stage Handoff Protocol
+## 🤝 Stage Handoff Protocol
 
 Stage transitions between adjacent skills follow the **Explicit Handoff Protocol** defined in [`research-shared-references/anchor-gates.md`](skills/research-shared-references/anchor-gates.md) (or trigger [`research-shared-references`](skills/research-shared-references/SKILL.md)):
 
-1. **One Offer at a Time**: When a stage genuinely finishes and its human anchor is confirmed, it exposes a single conversation-scoped `NEXT_SKILL_HANDOFF` JSON object with status `awaiting_confirmation`.
-2. **Cryptographic Binding**: The handoff enumerates all consumed artifacts with absolute paths and exact SHA-256 byte hashes, plus canonical JSON digests for structured data.
-3. **No Automatic Cascade**: A direct affirmative (`yes`, `可以`, `继续`) authorizes **only the offered stage once**. It never grants authorization for subsequent stages, training runs, code execution, or publication.
-4. **Stale on Change**: If any bound input file changes before execution begins, the offer becomes `stale` and requires fresh presentation and confirmation.
-5. **No Timeout Auto-Approval**: Silence, timeout, or autonomous agent flags never grant authorization to cross a stage gate or enter a new skill.
+```json
+{
+  "from_skill": "research-ideas",
+  "to_skill": "research-experiment-plannning",
+  "project_root": "/absolute/path/to/project",
+  "docs_root": "/absolute/path/to/project/docs",
+  "invocation": "/research-experiment-plannning \"/absolute/path/to/project/docs/research-ideas/FINAL_PROPOSAL.md\" project: \"/absolute/path/to/project\"",
+  "proposal_path": "/absolute/path/to/project/docs/research-ideas/FINAL_PROPOSAL.md",
+  "proposal_sha256": "3a8b...4f",
+  "anchor_path": "/absolute/path/to/project/docs/research-ideas/PROBLEM_ANCHOR.md",
+  "anchor_sha256": "9c1e...2d",
+  "method_state_path": "/absolute/path/to/project/docs/research-ideas/REVIEW_STATE.json",
+  "method_state_sha256": "e4f0...7a",
+  "artifacts": [
+    {"role": "proposal", "path": ".../FINAL_PROPOSAL.md", "sha256": "3a8b...4f"},
+    {"role": "anchor", "path": ".../PROBLEM_ANCHOR.md", "sha256": "9c1e...2d"},
+    {"role": "method-state", "path": ".../REVIEW_STATE.json", "sha256": "e4f0...7a"}
+  ],
+  "status": "awaiting_confirmation"
+}
+```
+
+### The 5 Iron Rules of Handoffs:
+1. **One Offer at a Time**: When a stage finishes and its human anchor is approved, it posts a single conversation-scoped `NEXT_SKILL_HANDOFF` JSON object with `status: "awaiting_confirmation"`.
+2. **Cryptographic Hash Binding**: Handoffs enumerate all consumed inputs with absolute paths, exact SHA-256 byte hashes, and canonical JSON digests.
+3. **Permission Does Not Cascade**: Replying "yes" or "continue" authorizes **only the offered stage once**. It never authorizes subsequent stages, unapproved training runs, or paper publication.
+4. **Stale on Input Modification**: If any bound input file changes before the receiver acts, the offer immediately stales and requires re-presentation.
+5. **No Timeout Auto-Approval**: Silence, timeout, or autonomous flags **never grant permission to cross an anchor gate**.
 
 ---
 
-## Repository Layout
+## 🛠️ Usage & Runtime Compatibility
+
+Anchor Research skills are designed to be **host-neutral** and run seamlessly with any AI agent environment that supports tools/skills:
+
+### Claude Code / Anthropic Agent
+Link or copy the `skills/` directory into your project's `.claude/skills/` or global skills directory:
+```bash
+ln -s /path/to/anchor-research/skills ~/.claude/skills/anchor-research
+```
+
+### VS Code Copilot / Generic Agent
+Point your agent workspace settings to the `skills/` directory or load specific `SKILL.md` files as system prompts.
+
+### Triggers & Usage Examples:
+- **Refine an Idea**: `refine my approach: <problem description>`
+- **Literature Review**: `literature review topic: "Flow Matching for 3D Animation"`
+- **Plan Experiments**: `experiment plan: design ablation matrix for our method`
+- **Run Experiments**: `run experiment` (automatically identifies next approved `TODO` run)
+- **Check Training**: `check training run: <run_id> metrics: loss, eval_acc`
+- **Plan Paper**: `paper plan: audit experiment results and outline the paper`
+- **Draft Paper**: `write paper: compile ICLR 2026 conference paper`
+- **Make Poster**: `make poster: create A0 conference poster and talk script`
+
+---
+
+## 📜 Repository Structure
 
 ```text
 anchor-research/
 ├── README.md                          # Master English documentation
 ├── README.zh.md                       # Master Chinese documentation
+├── assets/
+│   └── anchor-research-banner.svg     # Architecture flow diagram
 └── skills/
     ├── research-shared-references/    # Canonical human anchor gate & protocol specification
     │   ├── SKILL.md                   # Skill definition & protocol index
@@ -267,6 +342,6 @@ anchor-research/
 
 ---
 
-## License
+## 📄 License
 
 MIT License. Author: Zhihao Li.

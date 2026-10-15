@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#070a12"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+    <linearGradient id="cardGradDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="anchorPillGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="badGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 38px; font-weight: 800; fill: url(#titleGrad); letter-spacing: 1px; }
+    .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; fill: #94a3b8; }
+    .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; }
+    .badge-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #f8fafc; }
+    .step-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #f1f5f9; }
+    .step-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; fill: #94a3b8; }
+    .anchor-badge { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 700; fill: #38bdf8; }
+    .warn-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #fca5a5; }
+    .warn-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; fill: #ef4444; }
+  </style>
+
+  <!-- Canvas Background -->
+  <rect x="0" y="0" width="1200" height="480" rx="16" fill="url(#bgGrad)" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Subtle glow circles in background -->
+  <circle cx="200" cy="80" r="120" fill="#38bdf8" opacity="0.06" filter="url(#glow)"/>
+  <circle cx="950" cy="380" r="140" fill="#818cf8" opacity="0.06" filter="url(#glow)"/>
+
+  <!-- Top Hero Header -->
+  <g transform="translate(60, 48)">
+    <!-- Anchor Icon SVG -->
+    <g transform="translate(0, 2) scale(1.3)">
+      <path d="M12 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-1 7V9h2v2h4a1 1 0 1 1 0 2h-4v7.92A7.002 7.002 0 0 1 5.08 16H8a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1 9.002 9.002 0 0 0 9 8.94V13H7a1 1 0 1 1 0-2h4z" fill="#38bdf8"/>
+    </g>
+    <text x="42" y="28" class="title">ANCHOR RESEARCH</text>
+    <text x="42" y="54" class="subtitle">Anchor first. Automate second. — Human-in-the-Loop Auto Research Skill Framework</text>
+    
+    <!-- Header Feature Pills -->
+    <g transform="translate(730, 10)">
+      <rect x="0" y="0" width="110" height="26" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+      <text x="14" y="17" class="badge-text" fill="#38bdf8">🔒 Human-Gated</text>
+
+      <rect x="120" y="0" width="105" height="26" rx="13" fill="#1e293b" stroke="#818cf8" stroke-width="1"/>
+      <text x="134" y="17" class="badge-text" fill="#818cf8">🛡️ Anti-Drift</text>
+
+      <rect x="235" y="0" width="115" height="26" rx="13" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
+      <text x="249" y="17" class="badge-text" fill="#34d399">⚡ 14 Skills Chain</text>
+    </g>
+  </g>
+
+  <!-- Divider Line -->
+  <line x1="60" y1="125" x2="1140" y2="125" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- ================= SECTION 1: Traditional Auto Research (Unguided) ================= -->
+  <g transform="translate(60, 145)">
+    <!-- Label Badge -->
+    <rect x="0" y="0" width="220" height="24" rx="6" fill="#7f1d1d" opacity="0.6"/>
+    <text x="10" y="16" class="label" fill="#fca5a5">❌ Traditional Auto Research</text>
+    <text x="232" y="16" class="subtitle" font-size="12px">Unguided agent exploration → Silent goal drift → Wasted GPU-months</text>
+
+    <!-- Flow line behind cards -->
+    <line x1="90" y1="62" x2="980" y2="62" stroke="#450a0a" stroke-width="2" stroke-dasharray="4 4"/>
+
+    <!-- Step 1: Vague Idea -->
+    <g transform="translate(0, 36)">
+      <rect x="0" y="0" width="170" height="52" rx="8" fill="#18181b" stroke="#71717a" stroke-width="1"/>
+      <text x="16" y="24" class="step-title">1. Vague Prompt</text>
+      <text x="16" y="40" class="step-sub">Broad direction given</text>
+    </g>
+
+    <text x="188" y="66" fill="#71717a" font-size="16px" font-weight="bold">→</text>
+
+    <!-- Step 2: Autonomous Loop -->
+    <g transform="translate(210, 36)">
+      <rect x="0" y="0" width="210" height="52" rx="8" fill="#1c1917" stroke="#ea580c" stroke-width="1"/>
+      <text x="16" y="24" class="warn-title">2. Blackbox Automation</text>
+      <text x="16" y="40" class="warn-sub">Auto-eval &amp; auto-stack baselines</text>
+    </g>
+
+    <text x="438" y="66" fill="#ea580c" font-size="16px" font-weight="bold">→</text>
+
+    <!-- Step 3: Unnoticed Drift -->
+    <g transform="translate(460, 36)">
+      <rect x="0" y="0" width="210" height="52" rx="8" fill="#261010" stroke="#ef4444" stroke-width="1"/>
+      <text x="16" y="24" class="warn-title">3. Unnoticed Drift</text>
+      <text x="16" y="40" class="warn-sub">Solves easier, unrelated problem</text>
+    </g>
+
+    <text x="688" y="66" fill="#ef4444" font-size="16px" font-weight="bold">→</text>
+
+    <!-- Step 4: Flawed Paper -->
+    <g transform="translate(710, 36)">
+      <rect x="0" y="0" width="210" height="52" rx="8" fill="#300d0d" stroke="#f87171" stroke-width="1.2"/>
+      <text x="16" y="24" class="warn-title">4. Hallucinated Paper</text>
+      <text x="16" y="40" class="warn-sub">Missed initial core goal</text>
+    </g>
+
+    <text x="938" y="66" fill="#ef4444" font-size="16px" font-weight="bold">→</text>
+
+    <!-- Step 5: Failure Badge -->
+    <g transform="translate(960, 36)">
+      <rect x="0" y="0" width="120" height="52" rx="8" fill="#450a0a" stroke="#b91c1c" stroke-width="1.5"/>
+      <text x="16" y="24" class="step-title" fill="#fecaca">💥 Reruns</text>
+      <text x="16" y="40" class="step-sub" fill="#fca5a5">GPU wasted</text>
+    </g>
+  </g>
+
+  <!-- ================= SECTION 2: Anchor Research Framework ================= -->
+  <g transform="translate(60, 280)">
+    <!-- Label Badge -->
+    <rect x="0" y="0" width="230" height="24" rx="6" fill="#064e3b" opacity="0.7"/>
+    <text x="10" y="16" class="label" fill="#6ee7b7">✓ Anchor Research Framework</text>
+    <text x="242" y="16" class="subtitle" font-size="12px">Continuous human alignment anchors + verifiable cryptographic digests</text>
+
+    <!-- Step 1: Knowledge & Literature -->
+    <g transform="translate(0, 36)">
+      <rect x="0" y="0" width="170" height="110" rx="10" fill="url(#cardGradDark)" stroke="#0284c7" stroke-width="1.2"/>
+      <rect x="12" y="10" width="146" height="20" rx="5" fill="#0369a1" opacity="0.3"/>
+      <text x="18" y="24" class="anchor-badge">📌 Anchor 0: Corpus</text>
+      <text x="16" y="52" class="step-title">Literature Ground</text>
+      <text x="16" y="70" class="step-sub">• Corpus Scope Approval</text>
+      <text x="16" y="86" class="step-sub">• Landscape Synthesis</text>
+      <text x="16" y="100" class="step-sub">• Evidence Limitations</text>
+    </g>
+
+    <!-- Arrow 1 -->
+    <g transform="translate(176, 85)">
+      <line x1="0" y1="0" x2="16" y2="0" stroke="#38bdf8" stroke-width="2"/>
+      <polygon points="16,-4 24,0 16,4" fill="#38bdf8"/>
+    </g>
+
+    <!-- Step 2: Problem Anchor & Ideas -->
+    <g transform="translate(204, 36)">
+      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#059669" stroke-width="1.2"/>
+      <rect x="12" y="10" width="166" height="20" rx="5" fill="#047857" opacity="0.3"/>
+      <text x="18" y="24" class="anchor-badge" fill="#34d399">📌 Anchor 1+2: Ideas</text>
+      <text x="16" y="52" class="step-title">Problem &amp; Method</text>
+      <text x="16" y="70" class="step-sub">• PROBLEM_ANCHOR.md</text>
+      <text x="16" y="86" class="step-sub">• FINAL_PROPOSAL.md</text>
+      <text x="16" y="100" class="step-sub">• Independent AC Review</text>
+    </g>
+
+    <!-- Arrow 2 -->
+    <g transform="translate(400, 85)">
+      <line x1="0" y1="0" x2="16" y2="0" stroke="#34d399" stroke-width="2"/>
+      <polygon points="16,-4 24,0 16,4" fill="#34d399"/>
+    </g>
+
+    <!-- Step 3: Experiment Planning -->
+    <g transform="translate(428, 36)">
+      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#6366f1" stroke-width="1.2"/>
+      <rect x="12" y="10" width="166" height="20" rx="5" fill="#4338ca" opacity="0.3"/>
+      <text x="18" y="24" class="anchor-badge" fill="#a5b4fc">📌 Anchor 3: Plan</text>
+      <text x="16" y="52" class="step-title">Roadmap &amp; Milestones</text>
+      <text x="16" y="70" class="step-sub">• Claim-Driven Blocks</text>
+      <text x="16" y="86" class="step-sub">• Task Projection Hash</text>
+      <text x="16" y="100" class="step-sub">• Compute Budget Cap</text>
+    </g>
+
+    <!-- Arrow 3 -->
+    <g transform="translate(624, 85)">
+      <line x1="0" y1="0" x2="16" y2="0" stroke="#818cf8" stroke-width="2"/>
+      <polygon points="16,-4 24,0 16,4" fill="#818cf8"/>
+    </g>
+
+    <!-- Step 4: Run & Execution -->
+    <g transform="translate(652, 36)">
+      <rect x="0" y="0" width="190" height="110" rx="10" fill="url(#cardGradDark)" stroke="#8b5cf6" stroke-width="1.2"/>
+      <rect x="12" y="10" width="166" height="20" rx="5" fill="#6d28d9" opacity="0.3"/>
+      <text x="18" y="24" class="anchor-badge" fill="#c4b5fd">📌 Anchor 4: Tracker</text>
+      <text x="16" y="52" class="step-title">Execute &amp; Evaluate</text>
+      <text x="16" y="70" class="step-sub">• Ground Truth Eval</text>
+      <text x="16" y="86" class="step-sub">• Milestone Stop/Go</text>
+      <text x="16" y="100" class="step-sub">• Advisory Diagnostics</text>
+    </g>
+
+    <!-- Arrow 4 -->
+    <g transform="translate(848, 85)">
+      <line x1="0" y1="0" x2="16" y2="0" stroke="#c084fc" stroke-width="2"/>
+      <polygon points="16,-4 24,0 16,4" fill="#c084fc"/>
+    </g>
+
+    <!-- Step 5: Paper, Manuscript & Poster -->
+    <g transform="translate(876, 36)">
+      <rect x="0" y="0" width="204" height="110" rx="10" fill="url(#cardGradDark)" stroke="#ec4899" stroke-width="1.2"/>
+      <rect x="12" y="10" width="180" height="20" rx="5" fill="#be185d" opacity="0.3"/>
+      <text x="18" y="24" class="anchor-badge" fill="#f472b6">📌 Anchor 5,6,7: Deliver</text>
+      <text x="16" y="52" class="step-title">Paper &amp; Presentation</text>
+      <text x="16" y="70" class="step-sub">• Audited Results Bundle</text>
+      <text x="16" y="86" class="step-sub">• LaTeX Compiled Paper</text>
+      <text x="16" y="100" class="step-sub">• A0/A1 Poster &amp; Talk</text>
+    </g>
+  </g>
+</svg>
