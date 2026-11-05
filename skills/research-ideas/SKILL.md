@@ -3,7 +3,7 @@ name: research-ideas
 description: |
   Use matching approved literature-review and literature-summary outputs to generate 4–6 ranked research candidates and await explicit route selection when no idea is supplied, or optimize supplied intent. Separately obtain approval of the exact drafted problem anchor before full synthesis and approval of the exact independently reviewed proposal before replacing current exports or offering planning; preserve prior approved anchors and immutable proposal/review evidence.
   Trigger: "research ideas", "提出研究方案", "基于文献生成新idea", "打磨idea", "refine my approach", "细化研究方案", "decompose this problem"
-version: 6.0.0
+version: 6.1.0
 author: Zhihao Li
 license: MIT
 argument-hint: "input: docs/research-literature-review/research_foundation_review.json | summary: docs/research-literature-summary | ideas-overview: <optional-user-file> | project: <current-project-root> | select: <existing-candidate-ID>"
@@ -47,9 +47,16 @@ These are **chat skill arguments**, not shell flags:
 | `max-rounds` | `5`; positive integer, maximum independent review attempts |
 | `threshold` | `9`; finite number in `[1, 10]`, subject to all non-score readiness gates |
 | `constraints` | Optional user resource, data, time, deployment, scope, or venue constraints; preserve exact intent |
+| `resources` | Optional structured resource profile; if absent or incomplete, collect it before ranking candidates |
 | `select` | Optional explicit ID from an existing matching pending candidate set; resumes selection only, never creates candidates and chooses one in the same invocation |
 
 Direct user-supplied idea text also counts as intent, even without a file. Merely naming the literature topic, giving a project path, or setting resource constraints does not supply a method idea. A generated proposal from a previous run is not automatically user intent; use it as intent only if the user explicitly designates it for optimization.
+
+The resource profile must cover, when relevant: accelerator type/count/VRAM, CPU/RAM,
+storage, usable training environment, dataset size/access status, parallelism, maximum
+per-run wall time, total experiment window, and any compute or monetary budget. Preserve
+unknown fields explicitly. A free-form `constraints` string may supplement this profile,
+but it does not silently count as a complete profile when key fields are absent.
 
 When resuming a pending selection, resolve omitted input/summary, original mode/intent, constraints and loop settings from that exact saved binding, not fresh defaults. Explicitly changed arguments must still match or invalidate the set. Process selection replies against the pending table before interpreting a unique candidate title as newly supplied idea text; selecting a generated candidate does not switch to optimization mode.
 
@@ -128,7 +135,22 @@ Complete these checks before method synthesis or a review:
 6. Honor the review's `enabled_sources` and `source_status`. Disabled sources must not be accessed, downloaded, or probed. Use permitted retained sources for method details. Additional verification may use only authorized accessible sources, linking exact evidence. Lack of full text is an evidence limitation, not permission to fabricate details or silently change source policy.
 7. Resolve optional idea intent. An explicit `ideas-overview` that is missing, unreadable, or empty is a concrete input error, not a silent switch to new-proposal mode. An absent default overview means no file intent; an empty default overview is ignored with an honest note, not a blocker. Read an existing nonempty default overview. Combine file intent with direct user idea text and explicit constraints; a clear current user amendment takes precedence, but a material unresolved conflict must be surfaced rather than selecting whichever produces a higher score.
 
-Choose `optimize-user-idea` if usable file or direct idea intent exists; otherwise choose `literature-driven` immediately, with no request for user supplementation. If supplied intent falls outside the reviewed corpus, explain the mismatch and offer a matching upstream review or a user-approved scope decision; do not replace either the user's problem or the corpus silently.
+8. Resolve the resource profile before ranking or comparing candidates. If the bound
+  profile is absent or missing material fields, ask the user for a concise resource
+  intake covering: available GPU/accelerator model, count, VRAM and usable hours;
+  CPU/RAM/storage; software environment; dataset size and access status; allowed
+  parallel jobs; maximum single-run time; total experiment deadline; and compute or
+  monetary budget. Also ask whether estimates should include only the decisive core
+  test or the complete baseline/ablation package. Persist the exact reply and a
+  `resource_profile_confirmation` before continuing. Do not rank candidates or claim
+  feasibility while this gate is unresolved.
+
+  If a field is genuinely unknown, preserve it as unknown and continue only when the
+  missing field cannot materially change the comparison; otherwise keep the workflow
+  at `awaiting_resource_profile`. Never infer a GPU model, throughput, dataset size or
+  deadline from the repository, a paper or a generic hardware label.
+
+Choose `optimize-user-idea` if usable file or direct idea intent exists; otherwise choose `literature-driven` immediately after the resource gate, with no request for user supplementation. If supplied intent falls outside the reviewed corpus, explain the mismatch and offer a matching upstream review or a user-approved scope decision; do not replace either the user's problem or the corpus silently.
 
 Report all reachable missing/stale inputs together with exact paths and remediation. Without matched completed literature, stop proposal generation honestly. Never fabricate a fallback review, candidate evidence, reviewer output, or readiness result.
 
@@ -187,6 +209,9 @@ After each completed phase persist `REVIEW_STATE.json` with real recoverable ref
   "intent_sources": [],
   "intent_sha256": null,
   "constraints": {},
+  "resource_profile": null,
+  "resource_profile_confirmation": null,
+  "candidate_resource_estimates": [],
   "candidate_path": "<absolute IDEAS_DIR/CANDIDATE_PROPOSALS.md>",
   "candidate_sha256": "<SHA-256 of candidate file UTF-8 bytes>",
   "candidate_ids": ["C1", "C2", "C3", "C4", "C5"],
@@ -231,7 +256,7 @@ Persist the complete actual ranking, not just its first row. The selection file 
 
 For supplied intent retain exact file/direct text in `CONTEXT_BRIEF.md` and fingerprint it canonically. After selection save the exact confirming reply, selected ID/title/rank and full candidate analysis in `confirmed_snapshot`, together with its candidate/source/summary digests, constraints and settings; never reconstruct authorization from memory. Add a `workflow_sha256` derived canonically from these bindings (or supplied intent), selected route, frozen anchor and settings to all subsequent checkpoints/review ledger entries. This binds historical evidence without an invented directory identifier.
 
-`phase` is the last completed phase: `candidates`, `anchor_draft`, `anchor`, `proposal`, `review`, `refine`, `proposal_draft`, or `done`. Gate statuses are `awaiting_selection`, `selected`, `awaiting_anchor_approval`, `awaiting_proposal_approval`, `in_progress`, `completed`, `declined`, `stale` or `failed` as actually applicable. Approval records begin false with null unknowns; only actual bound user decisions can set true. Record literal `null` with an explanatory note when reviewer identity/model is not exposed. Persist exact proposal/review fingerprints and frozen constraints to prevent scoring an unreviewed revision.
+`phase` is the last completed phase: `resource_profile`, `candidates`, `anchor_draft`, `anchor`, `proposal`, `review`, `refine`, `proposal_draft`, or `done`. Gate statuses are `awaiting_resource_profile`, `awaiting_selection`, `selected`, `awaiting_anchor_approval`, `awaiting_proposal_approval`, `in_progress`, `completed`, `declined`, `stale` or `failed` as actually applicable. Approval records begin false with null unknowns; only actual bound user decisions can set true. Record literal `null` with an explanatory note when reviewer identity/model is not exposed. Persist exact proposal/review fingerprints and frozen constraints to prevent scoring an unreviewed revision.
 
 Inspect only the fixed current state and its explicit references. Resume only if project, review path/canonical digest, full summary snapshot and producer approval/adoption, mode, intent, constraints, candidate/confirmation when applicable, anchor candidate/approval, proposal bytes and settings match. Re-present a matching pending selection/anchor/proposal gate and wait for that decision, preserving consumed attempts and settings regardless of age. Changed inputs or candidate bytes invalidate pending confirmation: report the change, refresh grounded candidates on an authorized generation request, and require a fresh choice. An explicit `select` against missing/stale state stops with the exact reason; it cannot silently generate replacements or carry its choice into a refreshed set.
 
@@ -241,6 +266,7 @@ On valid active recovery read the anchor, context, confirmed candidate, full cur
 
 | Last completed phase | Next action |
 |---|---|
+| `resource_profile`, `awaiting_resource_profile` | Re-present the resource intake questions and wait for a complete or explicitly bounded profile |
 | `candidates`, `awaiting_selection` | Show bound ranking and wait for an explicit unique selection |
 | `candidates`, `selected` | Verify route confirmation, draft and present the problem; wait at `awaiting_anchor_approval` |
 | `anchor_draft`, `awaiting_anchor_approval` | Revalidate draft/source bindings, re-present exact anchor and wait; no full synthesis |
@@ -273,10 +299,10 @@ When review and summary disagree, follow the actual accessible paper evidence an
 
 Write `CANDIDATE_PROPOSALS.md`:
 
-- **Literature-driven:** generate **4–6** genuinely distinct proposals (default 5), not paper summaries, renamed known mechanisms, trivial variants or arbitrary combinations. Each has a stable visible ID (`C1`, `C2`, …), Chinese title, operational gap and nearest source paper IDs/locators, concrete mechanism delta with reused backbone/new component, prospective contribution, feasibility/resource assumptions, major novelty and implementation risks, falsifiable central claim, and minimal decisive test. Use nearest 2–3 papers when the corpus supports that count, otherwise all available closest evidence with an explicit coverage limitation. Every candidate remains within reviewed facets and user constraints. Evidence-thin routes are explicitly provisional; do not invent novelty or results. If the evidence genuinely cannot support at least four distinct candidates, disclose the precise gap and request broader grounding, rather than padding or silently reducing the range.
+- **Literature-driven:** generate **4–6** genuinely distinct proposals (default 5), not paper summaries, renamed known mechanisms, trivial variants or arbitrary combinations. Each has a stable visible ID (`C1`, `C2`, …), Chinese title, operational gap and nearest source paper IDs/locators, concrete mechanism delta with reused backbone/new component, a concise **core argument chain** (`bottleneck -> mechanism -> expected change -> decisive evidence`), one-sentence **core contribution**, prospective contribution, feasibility/resource assumptions, major novelty and implementation risks, falsifiable central claim, and minimal decisive test. Use nearest 2–3 papers when the corpus supports that count, otherwise all available closest evidence with an explicit coverage limitation. Every candidate remains within reviewed facets and user constraints. Evidence-thin routes are explicitly provisional; do not invent novelty or results. If the evidence genuinely cannot support at least four distinct candidates, disclose the precise gap and request broader grounding, rather than padding or silently reducing the range.
 - **Optimize-user-idea:** compare credible bounded mechanism alternatives for the same supplied problem where alternatives exist. Record what is fixed/negotiable; no extra no-idea selection gate. If one route is viable, explain rather than padding with different problems. Choose a focused intent-preserving mechanism using the criteria below and proceed to its anchor.
 
-For literature-driven mode include a ranked comparison table with **rank, candidate ID/Chinese title, concrete recommendation reasons, prospective contribution/novelty uncertainty, feasibility, major risks, validation cost** (unknown when unknown). Rank by bottleneck fit, evidence-backed delta, feasibility under stated constraints, simplicity and decisiveness of the smallest test—not fashion or fabricated numeric precision. Explain why the recommendation outranks the alternatives and each candidate's tradeoffs, including why combining routes adds unjustified complexity. Provisional positioning against examined work is not global novelty clearance.
+For literature-driven mode include a ranked comparison table with **rank, candidate ID/Chinese title, core argument chain, core contribution, concrete recommendation reasons, resource fit, required accelerator/VRAM, estimated single-run wall time, estimated complete validation time, estimate confidence, prospective contribution/novelty uncertainty, feasibility, major risks, validation cost**. Each estimate must state its basis (`measured_analogue`, `scaling_assumption`, or `conservative_bound`) and distinguish core-test time from the complete baseline/ablation package. Unknown inputs produce `unknown` estimates plus the missing measurement; never convert an ungrounded guess into a numeric promise. Rank by bottleneck fit, evidence-backed delta, feasibility under stated constraints, simplicity and decisiveness of the smallest test—not fashion or fabricated numeric precision. Explain why the recommendation outranks the alternatives and each candidate's tradeoffs, including why combining routes adds unjustified complexity. Provisional positioning against examined work is not global novelty clearance.
 
 ### Mandatory no-idea selection gate
 
@@ -475,6 +501,7 @@ Respond concisely in Chinese with:
 
 - Mode, explicitly selected candidate/thesis or preserved supplied idea, current literature binding and evidence limits.
 - Why this new route was chosen or which original user intent was preserved.
+- For every candidate: core argument chain, one-sentence core contribution, resource fit, estimated core-test time, estimated complete-validation time, estimate basis/confidence, and the main uncertainty.
 - Attempts/valid reviews, computed score and verdict, explicitly subjective method-review assessment.
 - Anchor status, strongest concrete method improvements, and unresolved novelty/implementation/resource risks.
 - Actual links/paths to `FINAL_PROPOSAL.md`, `REVIEW_SUMMARY.md`, `REFINEMENT_REPORT.md`, and score history.

@@ -3,7 +3,7 @@ name: research-experiment-plannning
 description: 'Turn a reviewed proposal into a claim-driven experiment roadmap with execution order, checkpoints, and paper-ready evidence mapping. Use when the user asks for experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or claim-to-evidence validation after research-ideas.'
 argument-hint: 'Paste proposal context or point to docs/research-ideas/ outputs; include project and constraints on compute, data, and timeline.'
 user-invocable: true
-version: 3.0.0
+version: 3.1.0
 author: Zhihao Li
 license: MIT
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent
@@ -47,6 +47,8 @@ preserves the runner's historical evidence and reconciles task applicability.
 - **DOCS_ROOT = `<PROJECT_ROOT>/docs`**
 - **IDEAS_DIR = `<DOCS_ROOT>/research-ideas`**
 - **OUTPUT_DIR = `<DOCS_ROOT>/research-experiment-plannning`**
+- **BASELINES_DIR = `<PROJECT_ROOT>/research-baselines`**
+- **BASELINE_REGISTRY = `<OUTPUT_DIR>/BASELINE_REGISTRY.json`**
 - **MAX_PRIMARY_CLAIMS = 2**
 - **MAX_CORE_BLOCKS = 5**
 - **MAX_BASELINE_FAMILIES = 3**
@@ -63,6 +65,7 @@ preserves the runner's historical evidence and reconciles task applicability.
 | `<IDEAS_DIR>/REFINEMENT_REPORT.md` | Markdown | Recommended | Constraints, unresolved risks, score evolution |
 | User prompt / notes | Text | Optional | Missing context fallback |
 | Supplied codebase/repository constraints | Text / paths | Optional | Existing code source or framework assumptions that affect experiment design; execution resolves the actual implementation base |
+| Baseline sources / project roots | URLs, paths or notes | Optional | Other papers' code, revisions, configs and local project roots to compare; planning records them without silently cloning or running them |
 
 Input handling rules:
 
@@ -90,6 +93,75 @@ selection, compatibility checks and initialization/reuse. Changing those constra
 later invalidates affected design/consent bindings rather than silently changing the
 scientific experiment. Project docs stay in this project's fixed output directory even
 when execution uses an external local repository.
+
+### Baseline workspace responsibility boundary
+
+Maintain a single baseline workspace at `BASELINES_DIR` for comparable external
+projects, separate from the research documents and the selected method codebase. Each
+baseline receives a stable ID such as `B001` and a dedicated directory:
+
+```text
+<PROJECT_ROOT>/research-baselines/
+├── B001_<method-name>/
+│   ├── SOURCE.md
+│   ├── REPO_METADATA.json
+│   ├── upstream/
+│   ├── configs/
+│   ├── patches/
+│   └── notes/
+└── B002_<method-name>/
+```
+
+During planning, create or update only the registry and baseline manifests when the
+actual source metadata is available. Do not clone repositories, download checkpoints,
+install dependencies or copy third-party projects merely because a paper is listed.
+Those actions require explicit execution authorization and are owned by
+`research-run-experiment`. Preserve the source project's license and revision; never
+pretend a paper citation or repository URL is a locally reproducible baseline.
+
+`BASELINE_REGISTRY.json` is an inventory and comparison index, not a second progress
+database. Each entry must bind `baseline_id`, paper/source identifiers, `repo_url` or
+local `repo_path`, exact revision when known, license/status, entrypoint/configs,
+ dataset/split, checkpoint provenance, resource requirements, expected outputs, known
+ patches, comparability limitations and the claim/blocks that use it. Unknown fields
+ remain explicit `null` or `unknown`. A baseline can be used for conceptual comparison
+ without being executable; mark that distinction in the registry.
+
+Use this minimum registry shape and preserve exact file hashes for manifests:
+
+```json
+{
+  "schema_version": 1,
+  "project_root": "<absolute project root>",
+  "baselines_dir": "<absolute research-baselines>",
+  "entries": [
+    {
+      "baseline_id": "B001",
+      "paper": "<paper identifier/title>",
+      "method": "<method name>",
+      "repo_url": null,
+      "repo_path": "<absolute local path or null>",
+      "revision": null,
+      "license": "unknown",
+      "status": "planned",
+      "entrypoint": null,
+      "configs": [],
+      "dataset_splits": [],
+      "checkpoint_provenance": null,
+      "resource_requirements": {},
+      "expected_outputs": [],
+      "patches": [],
+      "comparability_limits": [],
+      "used_by_blocks": [],
+      "executable": false
+    }
+  ]
+}
+```
+dataset/split, checkpoint provenance, resource requirements, expected outputs, known
+patches, comparability limitations and the claim/blocks that use it. Unknown fields
+remain explicit `null` or `unknown`. A baseline can be used for conceptual comparison
+without being executable; mark that distinction in the registry.
 
 ## Research workflow and confirmed entry
 
@@ -168,6 +240,9 @@ State schema:
   "repo_path": null,
   "repo_url": null,
   "repo_revision": null,
+  "baselines_dir": "<actual absolute research-baselines>",
+  "baseline_registry_path": "<actual absolute BASELINE_REGISTRY.json>",
+  "baseline_registry_sha256": "<actual registry byte hash>",
   "context_sources": ["<actual absolute proposal path>", "<actual absolute review summary path>"],
   "context_sha256": {"<actual source path or user-context key>": "<content digest>"},
   "mode": "<planning from reviewed proposal or standalone user context>",
@@ -239,10 +314,14 @@ Extract:
 - Critical reviewer concerns
 - Data / compute / timeline constraints
 - Central frontier primitive (if any)
+- Baseline projects, source papers and any existing local project roots
+- Proposed insight/motivation experiments and the failure mode each should expose
 
 Checkpoint:
 
 - Write state with `phase = load_context`.
+- Resolve or initialize the planning inventory at `BASELINE_REGISTRY`; missing local
+  code is recorded as `planned`, not treated as an executable result.
 
 ### Phase 1: Freeze the Paper Claims
 
@@ -274,6 +353,13 @@ Construct a compact block set. Default candidates:
 4. Frontier necessity check (only if frontier primitive is central)
 5. Failure analysis or qualitative diagnosis
 
+At least one kept block must be an insight/motivation block when the proposal depends
+on a claimed failure mode. It is planned before the main method result and must state:
+the observable phenomenon, the smallest diagnostic run, the expected visualization or
+table, the baseline/project that produces it, and the condition that would weaken or
+refute the motivation. For a C1-style story this can be a TriDi contact-drift study
+before the contact-aligned noise-field method is run.
+
 For each candidate, classify as:
 
 - Main paper
@@ -297,11 +383,13 @@ For each kept block, specify all fields:
 - Why this block exists
 - Dataset / split / task
 - Compared systems
+- Baseline IDs and exact project/revision bindings from `BASELINE_REGISTRY`
 - Metrics (decisive first)
 - Setup details (backbone, trainable parts, key hyperparams, budget, seeds)
 - Success criterion
 - Failure interpretation
 - Table / figure target
+- Insight role: `motivation`, `mechanism_diagnostic`, `main_result`, `ablation`, or `failure_analysis`
 - Priority: MUST-RUN or NICE-TO-HAVE
 
 Special rules:
@@ -333,6 +421,11 @@ For each milestone, define:
 - Turnaround time
 - Risk and mitigation
 
+The first milestone must schedule every required insight/motivation run before the
+dependent main-method claim. Later milestones must reference those observations rather
+than retroactively inventing a motivation. The final report maps each insight run to
+its observed artifact, interpretation, limitation and the claim it supports.
+
 Rules:
 
 - Separate must-run from nice-to-have.
@@ -362,11 +455,18 @@ Use this template:
 **Foundation Review**: [actual absolute paired JSON path and canonical digest, or absent]
 **Literature Summary**: [actual absolute paired summary directory and validated papers_sha256, or absent]
 **Codebase Constraints**: [supplied kind/local path/remote/revision, or unresolved; no initialization performed]
+**Baseline Workspace**: [actual absolute BASELINES_DIR]
+**Baseline Registry**: [actual absolute BASELINE_REGISTRY path and byte hash]
 
 ## Claim Map
 | Claim | Why It Matters | Minimum Convincing Evidence | Linked Blocks |
 |-------|-----------------|-----------------------------|---------------|
 | C1    | ...             | ...                         | B1, B2        |
+
+## Baseline Comparison Map
+| Baseline ID | Paper / Method | Local Project or Repo | Revision | Role | Used By Blocks | Comparability Limits |
+|-------------|----------------|-----------------------|----------|------|----------------|----------------------|
+| B001        | ...            | ...                   | ...      | ...  | ...            | ...                  |
 
 ## Paper Storyline
 - Main paper must prove:
@@ -386,6 +486,10 @@ Use this template:
 - Failure interpretation:
 - Table / figure target:
 - Priority: MUST-RUN / NICE-TO-HAVE
+
+Insight blocks must appear before the main method block when they establish its
+motivation. Their report artifacts are evidence inputs to later blocks, not completed
+results of the proposed method.
 
 ### Block 2: [Name]
 ...
@@ -459,6 +563,9 @@ Use this structure, filling only actual planned values and observed history:
 ### Configs
 ### Scripts
 
+## Baseline Registry
+[Reference to BASELINE_REGISTRY.json; list only actual registered baseline manifests.]
+
 ## Experiment Reports
 [Preserve existing real reports; new tasks have no fabricated attempts, metrics or completion records.]
 
@@ -509,6 +616,12 @@ Must-run blocks:
 
 Highest-risk assumption:
 - [risk]
+
+Insight experiments planned first:
+- [insight block, observable failure mode, baseline ID, planned figure/table]
+
+Baseline comparison set:
+- [baseline ID, paper/method, revision, role, comparability limitation]
 
 First three runs to launch:
 1. [run]
