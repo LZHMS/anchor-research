@@ -60,9 +60,9 @@ preserves the runner's historical evidence and reconciles task applicability.
 
 | Input | Type | Required | Purpose |
 |-------|------|----------|---------|
-| `<IDEAS_DIR>/FINAL_PROPOSAL.md` | Markdown | Recommended | Canonical method thesis and mechanism details |
+| `<IDEAS_DIR>/proposals/FINAL_PROPOSAL.md` | Markdown | Recommended | Canonical method thesis and mechanism details |
 | `<IDEAS_DIR>/REVIEW_SUMMARY.md` | Markdown | Recommended | Reviewer concerns to convert into decisive experiments |
-| `<IDEAS_DIR>/REFINEMENT_REPORT.md` | Markdown | Recommended | Constraints, unresolved risks, score evolution |
+| `<IDEAS_DIR>/reviews/REFINEMENT_REPORT.md` | Markdown | Recommended | Constraints, unresolved risks, score evolution |
 | User prompt / notes | Text | Optional | Missing context fallback |
 | Supplied codebase/repository constraints | Text / paths | Optional | Existing code source or framework assumptions that affect experiment design; execution resolves the actual implementation base |
 | Baseline sources / project roots | URLs, paths or notes | Optional | Other papers' code, revisions, configs and local project roots to compare; planning records them without silently cloning or running them |
@@ -70,7 +70,7 @@ preserves the runner's historical evidence and reconciles task applicability.
 Input handling rules:
 
 1. Explicit user proposal files, notes, and project take precedence, followed by a bound handoff's exact paths, then the exact default `<IDEAS_DIR>/FINAL_PROPOSAL.md`. Resolve companion paths from that binding or the fixed `IDEAS_DIR`; never scan for dated folders or select by modification time. An explicitly supplied missing file is an error.
-2. Record actual paths and content fingerprints from `REVIEW_STATE.json` or the handoff. Verify the delivered proposal's byte SHA-256 against `final_proposal_sha256`; keep its reviewed source path/hash separate, and accept review scores only for the unchanged snapshot matching `last_reviewed_proposal_sha256`. Literature defaults to `<DOCS_ROOT>/research-literature-review/research_foundation_review.json` and `<DOCS_ROOT>/research-literature-summary/`. Verify the summary manifest's resolved input path and canonical JSON `input_sha256` match the actual review, and its completed per-paper contexts and overview `papers_sha256` bindings remain valid. Changed sources invalidate the old bundle; matching directories alone prove nothing. For other missing context, use available user notes and label lower confidence and the precise gaps.
+2. Record actual paths and content fingerprints from `REVIEW_STATE.json` or the handoff. Verify the delivered proposal's byte SHA-256 against `final_proposal_sha256`; keep its reviewed source path/hash separate, and accept review scores only for the unchanged snapshot matching `last_reviewed_proposal_sha256`. The default proposal is `<IDEAS_DIR>/proposals/FINAL_PROPOSAL.md`. Literature defaults to `<DOCS_ROOT>/research-literature-review/research_foundation_review.json` and `<DOCS_ROOT>/research-literature-summary/`. Verify the summary manifest's resolved input path and canonical JSON `input_sha256` match the actual review, and its completed per-paper contexts and overview `papers_sha256` bindings remain valid. Changed sources invalidate the old bundle; matching directories alone prove nothing. For other missing context, use available user notes and label lower confidence and the precise gaps.
 3. Never invent claims, constraints, or prior results.
 4. Reuse proposal assumptions (data, model size, timeline, compute) unless user explicitly changes them.
 5. For standalone user context without an existing proposal, write to the same fixed `OUTPUT_DIR`, bind the supplied context and its digest, and record absent upstream artifacts as absent. Genuine user adoption of that input scope must be recorded before final planning approval. Keep method inputs in `IDEAS_DIR` and experiment outputs in `OUTPUT_DIR`; do not assume they are colocated.
@@ -288,7 +288,7 @@ Write rules:
 └── EXPERIMENT_TRACKER.md
 ```
 
-An optional planning-readiness section may be appended to the selected `<IDEAS_DIR>/score-history.md` if it already exists; do not copy method artifacts into the experiment folder.
+An optional planning-readiness section may be appended to the selected `<IDEAS_DIR>/reviews/score-history.md` if it already exists; do not copy method artifacts into the experiment folder.
 
 ## Workflow
 
@@ -302,9 +302,9 @@ An optional planning-readiness section may be appended to the selected `<IDEAS_D
 
 Read in order if present:
 
-- `<IDEAS_DIR>/FINAL_PROPOSAL.md` (or the explicit proposal path)
+- `<IDEAS_DIR>/proposals/FINAL_PROPOSAL.md` (or the explicit proposal path)
 - `<IDEAS_DIR>/REVIEW_SUMMARY.md`
-- `<IDEAS_DIR>/REFINEMENT_REPORT.md`
+- `<IDEAS_DIR>/reviews/REFINEMENT_REPORT.md`
 
 Extract:
 
@@ -595,7 +595,7 @@ Tracker rules:
 
 #### Step 5.3: Optional score-history update
 
-If `<IDEAS_DIR>/score-history.md` exists, append a concise section describing planning-readiness checks for:
+If `<IDEAS_DIR>/reviews/score-history.md` exists, append a concise section describing planning-readiness checks for:
 
 - claim_coverage
 - novelty_isolation

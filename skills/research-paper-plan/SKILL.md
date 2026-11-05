@@ -36,7 +36,7 @@ Accept exact inputs from direct invocation or upstream `research-run-experiment`
 
 Prefer explicit exact paths, then accepted exact bindings, then these inspectable defaults:
 
-1. `<DOCS_ROOT>/research-ideas/FINAL_PROPOSAL.md`.
+1. `<DOCS_ROOT>/research-ideas/proposals/FINAL_PROPOSAL.md`.
 2. `<DOCS_ROOT>/research-literature-review/research_foundation_review.json` with the paired `<DOCS_ROOT>/research-literature-summary/` manifest, contexts, analyses, sidecars, and overview actually consumed.
 3. `<DOCS_ROOT>/research-experiment-plannning/EXPERIMENT_PLAN.md` and `EXPERIMENT_TRACKER.md` (the existing directory spelling is intentional).
 4. Explicit retrofit/diagnostic/narrative reports, real code/configs, original attempt evidence, completed result data, and relevant existing assets. Inspect actual supplied/project structure; never guess a universal log/result format or ingest unrelated directories recursively.

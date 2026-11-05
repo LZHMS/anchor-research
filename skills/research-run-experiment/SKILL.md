@@ -72,13 +72,13 @@ Five principles dominate this skill:
 | `<PLAN_DIR>/EXPERIMENT_PLAN.md` or explicit plan path | Markdown | Yes | Source of truth for criteria, budget, and base strategy |
 | `<PLAN_DIR>/EXPERIMENT_PLAN_STATE.json` or explicit `plan_state_path` | JSON | Deploy: Yes | Planner-owned `plan_approval` and immutable approved planning inventory; absence blocks new launches, not reporting original run evidence. |
 | `method_state_path`, `method_state_sha256`, `anchor_path` | Paths / digest | Deploy: Yes | Actual ideas/retrofit owner and its current approved anchor/proposal, resolved from the approved plan's bindings. |
-| `<IDEAS_DIR>/FINAL_PROPOSAL.md` or explicit proposal path | Markdown | Recommended | Detailed method implementation definitions |
+| `<IDEAS_DIR>/proposals/FINAL_PROPOSAL.md` or explicit proposal path | Markdown | Recommended | Detailed method implementation definitions |
 | `mode` / `execution_mode` | Argument | Optional | `deploy`, `monitor`, or `review`, inferred from the actual request when omitted. A progress query is review, never implicit deployment. |
 | `codebase` / `codebase_kind` | Argument | Optional | `existing` to reuse a project, or `research-structured-codebase` to use that framework. Unknown is a separate unresolved choice, not permission to initialize. |
 | `repo_path` | Path | Optional | Local code root or explicitly chosen new destination; may differ from the project/docs root. |
 | `repo_url`, `repo_revision` | Text | Optional | Explicit remote source and optional pinned revision; clone/check-out actions require the corresponding authorization. |
 
-Input binding: Prefer explicit user paths, then a bound handoff's exact paths, then the exact canonical `<PLAN_DIR>/EXPERIMENT_PLAN.md` and tracker. Resolve proposal and literature paths from that plan's source fields or `EXPERIMENT_PLAN_STATE.json`; defaults are `<IDEAS_DIR>/FINAL_PROPOSAL.md`, `<DOCS_ROOT>/research-literature-review/research_foundation_review.json`, and `<DOCS_ROOT>/research-literature-summary/`. Verify actual paths and proposal byte SHA-256 against the recorded fingerprints, keeping clean-export and reviewed-source hashes separate. For literature context, verify summary manifest input path/canonical review digest and validated context/overview `papers_sha256` bindings. Missing explicit files or inconsistent/stale content bindings are errors; do not search dated folders or select by modification time. All plan/tracker reads and updates use these bound paths, including monitoring and strategy pivots.
+Input binding: Prefer explicit user paths, then a bound handoff's exact paths, then the exact canonical `<PLAN_DIR>/EXPERIMENT_PLAN.md` and tracker. Resolve proposal and literature paths from that plan's source fields or `EXPERIMENT_PLAN_STATE.json`; defaults are `<IDEAS_DIR>/proposals/FINAL_PROPOSAL.md`, `<DOCS_ROOT>/research-literature-review/research_foundation_review.json`, and `<DOCS_ROOT>/research-literature-summary/`. Verify actual paths and proposal byte SHA-256 against the recorded fingerprints, keeping clean-export and reviewed-source hashes separate. For literature context, verify summary manifest input path/canonical review digest and validated context/overview `papers_sha256` bindings. Missing explicit files or inconsistent/stale content bindings are errors; do not search dated folders or select by modification time. All plan/tracker reads and updates use these bound paths, including monitoring and strategy pivots.
 
 When an explicit tracker is supplied without a plan, resolve its recorded `Plan` path first (relative paths against `PROJECT_ROOT`); only if no binding exists use `EXPERIMENT_PLAN.md` in the tracker's actual parent directory. When an explicit plan is supplied without a tracker, prefer its recorded tracker path, otherwise use `EXPERIMENT_TRACKER.md` in that plan's actual parent directory. Explicit overrides must agree with the bundle; a missing companion is an error. Experimental `Run ID` (`R001`, `R002`, etc.) selects a tracker row, never a documentation directory.
 
@@ -233,12 +233,12 @@ Canonical incoming example (illustrative placeholders only; runtime replaces eve
     "to_skill": "research-run-experiment",
     "project_root": "/absolute/project",
     "docs_root": "/absolute/project/docs",
-    "invocation": "/research-run-experiment run ids: R001 — mode: deploy — plan: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md\" — tracker: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — proposal: \"/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
+   "invocation": "/research-run-experiment run ids: R001 — mode: deploy — plan: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md\" — tracker: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — proposal: \"/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
     "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md",
     "plan_sha256": "<actual plan byte SHA-256>",
     "tracker_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md",
     "tracker_sha256": "<actual finalized tracker byte SHA-256>",
-    "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md",
+   "proposal_path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md",
     "proposal_sha256": "<actual delivered proposal byte SHA-256>",
     "anchor_path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md",
     "anchor_sha256": "<actual approved anchor byte SHA-256>",
@@ -256,7 +256,7 @@ Canonical incoming example (illustrative placeholders only; runtime replaces eve
     "artifacts": [
       {"role": "experiment_plan", "path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "sha256": "<actual plan byte SHA-256>"},
       {"role": "experiment_tracker", "path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "sha256": "<actual finalized tracker byte SHA-256>"},
-      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "sha256": "<actual delivered proposal byte SHA-256>"},
+      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "sha256": "<actual delivered proposal byte SHA-256>"},
       {"role": "anchor", "path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md", "sha256": "<actual approved anchor byte SHA-256>"},
       {"role": "method_approval_state", "path": "/absolute/project/docs/research-ideas/REVIEW_STATE.json", "sha256": "<actual approved method state byte SHA-256>"},
       {"role": "plan_approval_state", "path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN_STATE.json", "sha256": "<actual approved plan state byte SHA-256>"}
@@ -520,8 +520,8 @@ Canonical alignment-needed offer (illustrative placeholders; runtime uses actual
     "to_skill": "research-retrofit",
     "project_root": "/absolute/project",
     "docs_root": "/absolute/project/docs",
-   "invocation": "/research-retrofit report: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — code: \"/absolute/project/models/method.py\" — repo_path: \"/absolute/project\" — result_paths: [\"/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/metrics.jsonl\"] — proposal: \"/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md\" — anchor: \"/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
-    "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md",
+   "invocation": "/research-retrofit report: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — code: \"/absolute/project/models/method.py\" — repo_path: \"/absolute/project\" — result_paths: [\"/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/metrics.jsonl\"] — proposal: \"/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md\" — anchor: \"/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
+   "proposal_path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md",
     "anchor_path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md",
     "anchor_sha256": "<actual current anchor byte SHA-256>",
     "proposal_sha256": "<actual current proposal byte SHA-256>",
@@ -540,10 +540,10 @@ Canonical alignment-needed offer (illustrative placeholders; runtime uses actual
    "evidence_paths": ["/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/output.log"],
     "completed_run_ids": ["R001"],
     "original_run_bindings": [
-      {"run_id": "R001", "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "plan_sha256": "<original executed plan byte SHA-256>", "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "proposal_sha256": "<original executed proposal byte SHA-256>", "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "applicability": "Implementation differs from the current proposal; alignment required before publication claims"}
+      {"run_id": "R001", "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "plan_sha256": "<original executed plan byte SHA-256>", "proposal_path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "proposal_sha256": "<original executed proposal byte SHA-256>", "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "applicability": "Implementation differs from the current proposal; alignment required before publication claims"}
     ],
     "artifacts": [
-      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "sha256": "<actual current proposal byte SHA-256>"},
+      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "sha256": "<actual current proposal byte SHA-256>"},
       {"role": "anchor", "path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md", "sha256": "<actual anchor byte SHA-256>"},
       {"role": "method_approval_state", "path": "/absolute/project/docs/research-ideas/REVIEW_STATE.json", "sha256": "<actual current method owner state byte SHA-256>"},
       {"role": "plan_approval_state", "path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN_STATE.json", "sha256": "<actual plan approval state byte SHA-256>"},
@@ -565,8 +565,8 @@ Canonical aligned, sufficient-evidence offer (an alternative, never a simultaneo
     "to_skill": "research-paper-plan",
     "project_root": "/absolute/project",
     "docs_root": "/absolute/project/docs",
-    "invocation": "/research-paper-plan project=\"/absolute/project\" docs_root=\"/absolute/project/docs\" proposal_path=\"/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md\" report_paths=[\"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\"] repo_path=\"/absolute/code-repo\" code_paths=[\"/absolute/code-repo/src/method.py\",\"/absolute/code-repo/src/evaluate.py\"] result_paths=[\"/absolute/code-repo/output/dataset/config/metrics.jsonl\"]",
-    "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md",
+   "invocation": "/research-paper-plan project=\"/absolute/project\" docs_root=\"/absolute/project/docs\" proposal_path=\"/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md\" report_paths=[\"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\"] repo_path=\"/absolute/code-repo\" code_paths=[\"/absolute/code-repo/src/method.py\",\"/absolute/code-repo/src/evaluate.py\"] result_paths=[\"/absolute/code-repo/output/dataset/config/metrics.jsonl\"]",
+   "proposal_path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md",
     "proposal_sha256": "<actual aligned proposal byte SHA-256>",
     "anchor_path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md",
     "anchor_sha256": "<actual approved anchor byte SHA-256>",
@@ -585,10 +585,10 @@ Canonical aligned, sufficient-evidence offer (an alternative, never a simultaneo
     "evidence_paths": ["/absolute/code-repo/output/dataset/config/output.log"],
     "completed_run_ids": ["R001"],
     "original_run_bindings": [
-      {"run_id": "R001", "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "plan_sha256": "<original executed plan byte SHA-256>", "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "proposal_sha256": "<original executed proposal byte SHA-256>", "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "applicability": "Verified aligned method; required claim evidence actually complete"}
+      {"run_id": "R001", "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "plan_sha256": "<original executed plan byte SHA-256>", "proposal_path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "proposal_sha256": "<original executed proposal byte SHA-256>", "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "applicability": "Verified aligned method; required claim evidence actually complete"}
     ],
     "artifacts": [
-      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "sha256": "<actual aligned proposal byte SHA-256>"},
+      {"role": "proposal", "path": "/absolute/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "sha256": "<actual aligned proposal byte SHA-256>"},
       {"role": "anchor", "path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md", "sha256": "<actual approved anchor byte SHA-256>"},
       {"role": "method_approval_state", "path": "/absolute/project/docs/research-ideas/REVIEW_STATE.json", "sha256": "<actual approved method owner state byte SHA-256>"},
       {"role": "plan_approval_state", "path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN_STATE.json", "sha256": "<actual approved plan state byte SHA-256>"},

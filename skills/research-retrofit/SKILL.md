@@ -19,7 +19,7 @@ Retrofit proposal using: **$ARGUMENTS**
 
 ## Overview
 
-Apply the [shared human anchor gates](../research-shared-references/anchor-gates.md). Use this skill when you have a **user-maintained research report document** (reliable, up-to-date project notes) and **already written or tuned core code** (the implementation ground truth). Your formal research proposal files (`<DOCS_ROOT>/research-ideas/FINAL_PROPOSAL.md` and `<DOCS_ROOT>/research-ideas/PROBLEM_ANCHOR.md`) need to be reconciled with the actual implementation and current plans.
+Apply the [shared human anchor gates](../research-shared-references/anchor-gates.md). Use this skill when you have a **user-maintained research report document** (reliable, up-to-date project notes) and **already written or tuned core code** (the implementation ground truth). Your formal research proposal files (`<DOCS_ROOT>/research-ideas/proposals/FINAL_PROPOSAL.md` and `<DOCS_ROOT>/research-ideas/PROBLEM_ANCHOR.md`) need to be reconciled with the actual implementation and current plans.
 
 **CRITICAL PRINCIPLE**: Code is ground truth for what was *implemented*, NOT authority over what *problem the researcher intends to solve*. When code drifts from the original problem definition, the agent must NOT unilaterally rewrite the problem anchor to match the code. Instead, it must diagnose the divergence, draft the reconciliation, and ask the researcher whether to re-anchor or adjust the implementation.
 
@@ -57,7 +57,7 @@ After successful revalidation set `running`; set `completed` only after Phases 0
 ### Phase 0: Auto-Locate Inputs
 1. Resolve `PROJECT_ROOT` from the explicit project argument, otherwise the bound handoff's accepted project root, otherwise the current working project directory (never the installed skill location). Resolve relative arguments against this root; **Docs Root Directory** defaults to `<PROJECT_ROOT>/docs`.
 2. Locate the **Research Report Document** specified by the user and the supplied core code paths; explicit inputs take precedence and explicit missing paths remain errors.
-3. Locate the outdated proposal: prefer the explicit existing proposal, then a bound handoff's path, otherwise exactly `<DOCS_ROOT>/research-ideas/FINAL_PROPOSAL.md`. `ResearchIdeasOverview.md` may provide user intent if supplied, but is not a replacement for an existing generated proposal to retrofit. Do not scan dated folders or select by modification time.
+3. Locate the outdated proposal: prefer the explicit existing proposal, then a bound handoff's path, otherwise exactly `<DOCS_ROOT>/research-ideas/proposals/FINAL_PROPOSAL.md`. `ResearchIdeasOverview.md` may provide user intent if supplied, but is not a replacement for an existing generated proposal to retrofit. Do not scan dated folders or select by modification time.
 4. Locate the original problem anchor: prefer the explicit existing anchor, then its recorded bound path, otherwise exactly `<DOCS_ROOT>/research-ideas/PROBLEM_ANCHOR.md`. Missing proposal/anchor paths must be reported rather than creating replacement method files.
 5. Read the bound `REVIEW_STATE.json` or report for actual upstream paths and content fingerprints. Defaults are `<DOCS_ROOT>/research-literature-review/research_foundation_review.json` and `<DOCS_ROOT>/research-literature-summary/`; explicit and recorded bindings must agree. Verify the summary manifest's resolved input path and canonical JSON `input_sha256` match the actual review, and current per-paper contexts and overview `papers_sha256` bindings are valid before using overview, aggregate report, or paper analyses for positioning.
 6. Bind actual proposal/anchor/report/code paths and byte SHA-256 fingerprints before updating. The old proposal may intentionally be outdated, but its old score only applies to its exact reviewed source snapshot; preserve the clean final export/source fingerprint distinction. Report missing files, changed/conflicting provenance, or unavailable literature precisely. Do not overwrite an unrelated proposal or treat a prior final proposal as the choice for an awaiting-selection ideas workflow.
@@ -99,7 +99,7 @@ Prompt rubric:
 - Score out of 10: Problem-Method Alignment, Contribution Sharpness, Mechanism Elegance, Empirical Feasibility.
 - Identify the single biggest target for rejection and suggest at most 3 immediate text/framing adjustments.
 
-Preserve the raw response as the next unused `round-<N>-review.md` file in `<DOCS_ROOT>/research-ideas/`. Update the current `<DOCS_ROOT>/research-retrofit/REBUTTAL_REVIEW.md` with the actual snapshot path/hash, raw review path, and assessment; never overwrite an old raw review.
+Preserve the raw response as the next unused `round-<N>-review.md` file in `<DOCS_ROOT>/research-ideas/reviews/`. Update the current `<DOCS_ROOT>/research-retrofit/REBUTTAL_REVIEW.md` with the actual snapshot path/hash, raw review path, and assessment; never overwrite an old raw review.
 
 ### Phase 4: Final Polish & State Persistence
 
@@ -134,8 +134,8 @@ Each JSON block below is the bare object value of the conversation variable `NEX
     "to_skill": "research-experiment-plannning",
     "project_root": "/work/project",
     "docs_root": "/work/project/docs",
-    "invocation": "/research-experiment-plannning project=\"/work/project\" proposal_path=\"/work/project/docs/research-ideas/FINAL_PROPOSAL.md\" anchor_path=\"/work/project/docs/research-ideas/PROBLEM_ANCHOR.md\" report_path=\"/work/project/docs/NARRATIVE_REPORT.md\" code_paths=[\"/work/project/src/model.py\"] review_summary_path=\"/work/project/docs/research-retrofit/REBUTTAL_REVIEW.md\" code_analysis_path=\"/work/project/docs/research-retrofit/CODE_ANALYSIS.md\" method_state_path=\"/work/project/docs/research-retrofit/RETROFIT_STATE.json\"",
-    "proposal_path": "/work/project/docs/research-ideas/FINAL_PROPOSAL.md",
+    "invocation": "/research-experiment-plannning project=\"/work/project\" proposal_path=\"/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md\" anchor_path=\"/work/project/docs/research-ideas/PROBLEM_ANCHOR.md\" report_path=\"/work/project/docs/NARRATIVE_REPORT.md\" code_paths=[\"/work/project/src/model.py\"] review_summary_path=\"/work/project/docs/research-retrofit/REBUTTAL_REVIEW.md\" code_analysis_path=\"/work/project/docs/research-retrofit/CODE_ANALYSIS.md\" method_state_path=\"/work/project/docs/research-retrofit/RETROFIT_STATE.json\"",
+    "proposal_path": "/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md",
     "anchor_path": "/work/project/docs/research-ideas/PROBLEM_ANCHOR.md",
     "report_path": "/work/project/docs/NARRATIVE_REPORT.md",
     "code_paths": ["/work/project/src/model.py"],
@@ -145,7 +145,7 @@ Each JSON block below is the bare object value of the conversation variable `NEX
     "method_state_sha256": "<actual-retrofit-state-byte-sha256>",
     "limitations": ["Changed claim requires a newly bound validation plan; old results remain historical."],
     "artifacts": [
-      {"role": "proposal", "path": "/work/project/docs/research-ideas/FINAL_PROPOSAL.md", "sha256": "<actual-final-export-byte-sha256>"},
+      {"role": "proposal", "path": "/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "sha256": "<actual-final-export-byte-sha256>"},
       {"role": "anchor", "path": "/work/project/docs/research-ideas/PROBLEM_ANCHOR.md", "sha256": "<actual-anchor-byte-sha256>"},
       {"role": "report", "path": "/work/project/docs/NARRATIVE_REPORT.md", "sha256": "<actual-report-byte-sha256>"},
       {"role": "code", "path": "/work/project/src/model.py", "sha256": "<actual-code-byte-sha256>"},
@@ -165,8 +165,8 @@ For evidence-ready work use the following alternative, never as a second simulta
     "to_skill": "research-paper-plan",
     "project_root": "/work/project",
     "docs_root": "/work/project/docs",
-    "invocation": "/research-paper-plan project=\"/work/project\" docs_root=\"/work/project/docs\" proposal_path=\"/work/project/docs/research-ideas/FINAL_PROPOSAL.md\" report_paths=[\"/work/project/docs/NARRATIVE_REPORT.md\"] repo_path=\"/work/code-repo\" code_paths=[\"/work/code-repo/src/model.py\",\"/work/code-repo/src/evaluate.py\"] result_paths=[\"/work/code-repo/results/metrics.jsonl\"] plan_path=\"/work/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md\" tracker_path=\"/work/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" method_state_path=\"/work/project/docs/research-retrofit/RETROFIT_STATE.json\"",
-    "proposal_path": "/work/project/docs/research-ideas/FINAL_PROPOSAL.md",
+    "invocation": "/research-paper-plan project=\"/work/project\" docs_root=\"/work/project/docs\" proposal_path=\"/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md\" report_paths=[\"/work/project/docs/NARRATIVE_REPORT.md\"] repo_path=\"/work/code-repo\" code_paths=[\"/work/code-repo/src/model.py\",\"/work/code-repo/src/evaluate.py\"] result_paths=[\"/work/code-repo/results/metrics.jsonl\"] plan_path=\"/work/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md\" tracker_path=\"/work/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" method_state_path=\"/work/project/docs/research-retrofit/RETROFIT_STATE.json\"",
+    "proposal_path": "/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md",
     "report_paths": ["/work/project/docs/NARRATIVE_REPORT.md"],
     "repo_path": "/work/code-repo",
     "code_paths": ["/work/code-repo/src/model.py", "/work/code-repo/src/evaluate.py"],
@@ -177,7 +177,7 @@ For evidence-ready work use the following alternative, never as a second simulta
     "method_state_sha256": "<actual-retrofit-state-byte-sha256>",
     "limitations": ["Carry the actual reviewer and evidence limitations here; no required experiments remain."],
     "artifacts": [
-      {"role": "proposal", "path": "/work/project/docs/research-ideas/FINAL_PROPOSAL.md", "sha256": "<actual-final-export-byte-sha256>"},
+      {"role": "proposal", "path": "/work/project/docs/research-ideas/proposals/FINAL_PROPOSAL.md", "sha256": "<actual-final-export-byte-sha256>"},
       {"role": "report", "path": "/work/project/docs/NARRATIVE_REPORT.md", "sha256": "<actual-report-byte-sha256>"},
       {"role": "plan", "path": "/work/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "sha256": "<actual-plan-byte-sha256>"},
       {"role": "tracker", "path": "/work/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "sha256": "<actual-tracker-byte-sha256>"},

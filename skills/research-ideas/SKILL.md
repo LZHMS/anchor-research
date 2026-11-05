@@ -3,7 +3,7 @@ name: research-ideas
 description: |
   Use matching approved literature-review and literature-summary outputs to generate 4–6 ranked research candidates and await explicit route selection when no idea is supplied, or optimize supplied intent. Separately obtain approval of the exact drafted problem anchor before full synthesis and approval of the exact independently reviewed proposal before replacing current exports or offering planning; preserve prior approved anchors and immutable proposal/review evidence.
   Trigger: "research ideas", "提出研究方案", "基于文献生成新idea", "打磨idea", "refine my approach", "细化研究方案", "decompose this problem"
-version: 6.1.0
+version: 6.2.0
 author: Zhihao Li
 license: MIT
 argument-hint: "input: docs/research-literature-review/research_foundation_review.json | summary: docs/research-literature-summary | ideas-overview: <optional-user-file> | project: <current-project-root> | select: <existing-candidate-ID>"
@@ -66,9 +66,11 @@ Resolve relative arguments against `PROJECT_ROOT`, not the skill installation or
 - `DOCS_ROOT = PROJECT_ROOT/docs`.
 - `FOUNDATION_OUTPUT_JSON`: the resolved review file, by default `DOCS_ROOT/research-literature-review/research_foundation_review.json`.
 - `SUMMARY_DIR`: the resolved completed summary directory, by default `DOCS_ROOT/research-literature-summary`. A supplied path must be inside this project's summary subtree and prove the exact input/content binding; folder names are not evidence.
-- `IDEAS_DIR = DOCS_ROOT/research-ideas`. All skill outputs are files directly in this fixed directory.
+- `IDEAS_DIR = DOCS_ROOT/research-ideas`. Current method and approval outputs stay in this fixed directory; review artifacts use its fixed `reviews/` subtree.
+- `REVIEW_DIR = IDEAS_DIR/reviews`. Raw review, refinement, clarification and score-history files live here.
+- `PROPOSAL_DIR = IDEAS_DIR/proposals`. Immutable proposal rounds and proposal exports live here.
 
-There is no per-execution directory allocation or newest-file discovery. Default outputs intentionally update this project's current material. Explicit missing files, invalid paths, or unavailable accepted-handoff artifacts are errors, not permission to substitute other inputs. Bind actual paths plus content digests, not folder names or timestamps. Do not search wildcard or dated historical directories, move/delete user-owned history, write alongside installed skills, or write into upstream outputs.
+There is no per-execution directory allocation or newest-file discovery. Default outputs intentionally update this project's current material. Explicit missing files, invalid paths, or unavailable accepted-handoff artifacts are errors, not permission to substitute other inputs. Bind actual paths plus content digests, not folder names or timestamps. Do not search wildcard or dated historical directories, move/delete user-owned history, write alongside installed skills, or write into upstream outputs. The fixed `reviews/` subtree is the single organization boundary for review artifacts; it is not a per-execution namespace.
 
 At execution start echo the actual resolved invocation, project root, review file, summary directory, mode, and intended output directory. Resolve scope from these real inputs rather than asking the user to repeat tool-accessible information.
 
@@ -164,24 +166,26 @@ PROJECT_ROOT/docs/research-ideas/
   PROBLEM_ANCHOR_DRAFT.md        # pending problem interpretation, never authoritative
   PROBLEM_ANCHOR.md              # current explicitly approved problem only
   anchor-N.md                   # immutable approved anchor revision before replacement
-  proposal-1.md                 # immutable full proposal with verbatim anchor
-  proposal-2.md                 # next unused proposal file number
-  round-1-review.md             # immutable raw independent review
-  round-1-refinement.md         # immutable full revision/change record, if needed
-  round-2-review.md             # next unused review sequence number
-  round-N-discussion-input.md   # immutable clarification packet, if needed
-  round-N-discussion-review.md  # immutable fresh clarification response
+  proposals/
+    proposal-1.md                # immutable full proposal with verbatim anchor
+    proposal-2.md                # next unused proposal file number
+    FINAL_PROPOSAL_DRAFT.md      # exact clean export awaiting proposal approval
+    FINAL_PROPOSAL.md            # current explicitly approved clean export
+  reviews/
+    round-1-review.md            # immutable raw independent review
+    round-1-refinement.md        # immutable full revision/change record, if needed
+    round-2-review.md            # next unused review sequence number
+    round-N-discussion-input.md  # immutable clarification packet, if needed
+    round-N-discussion-review.md # immutable fresh clarification response
+    REVIEW_SUMMARY_DRAFT.md      # pending overall review overview
+    REFINEMENT_REPORT_DRAFT.md   # pending refinement report
+    REFINEMENT_REPORT.md         # current refinement report
+    score-history.md             # append-only attempt ledger across workflows
   REVIEW_STATE.json             # current workflow checkpoint
-  REVIEW_SUMMARY.md             # current final report
-  FINAL_PROPOSAL_DRAFT.md        # exact clean export awaiting proposal approval
-  REVIEW_SUMMARY_DRAFT.md        # pending report, not an approved current export
-  REFINEMENT_REPORT_DRAFT.md     # pending report, not an approved current export
-  FINAL_PROPOSAL.md              # current explicitly approved clean export
-  REFINEMENT_REPORT.md           # current final report
-  score-history.md              # append-only attempt ledger across workflows
+  REVIEW_SUMMARY.md              # one root-level overall review history and overview
 ```
 
-The parent owns current context, candidates, selection, anchor, immutable proposal snapshots, state, history and final aggregates. Each independent reviewer writes only its assigned unused review file. Current files update when genuinely new validated material/intent is requested; immutable numbered files never overwrite. Allocate a `proposal-N.md` number greater than every existing proposal number, and a `round-N-*` sequence greater than every existing or reserved round number, including incomplete files. Do not fill old gaps or reuse a reserved number for another review attempt. Related refinement/discussion files may share their attempt's sequence only when those exact filenames are unused. This is file numbering within one directory, not a storage namespace. Do not automatically archive into extra directories or delete user-owned history.
+The parent owns current context, candidates, selection, anchor, immutable proposal snapshots, state, history and final aggregates. Each independent reviewer writes only its assigned unused file under `REVIEW_DIR`. Current files update when genuinely new validated material/intent is requested; immutable numbered files never overwrite. Allocate a `proposal-N.md` number greater than every existing proposal number under `PROPOSAL_DIR`, and a `round-N-*` sequence greater than every existing or reserved review filename under `REVIEW_DIR`, including incomplete files. Do not fill old gaps or reuse a reserved number for another review attempt. Related refinement/discussion files may share their attempt's sequence only when those exact filenames are unused. `REVIEW_SUMMARY.md` is the only root-level review overview/history document; it indexes the immutable files and does not replace them. Proposal exports are likewise kept under `PROPOSAL_DIR`; the root contains only global workflow entrypoints. Do not automatically archive into extra directories or delete user-owned history.
 
 `review_attempts` counts full review attempts in the current workflow, including failed/invalid attempts; `max-rounds` bounds that budget. `review_sequence` is the ever-increasing file index and may start above 1. A new workflow resets the attempt budget, not the file sequence. A matching recovery keeps the consumed budget; selecting again or reconnecting cannot reset it.
 
@@ -213,6 +217,8 @@ After each completed phase persist `REVIEW_STATE.json` with real recoverable ref
   "resource_profile_confirmation": null,
   "candidate_resource_estimates": [],
   "candidate_path": "<absolute IDEAS_DIR/CANDIDATE_PROPOSALS.md>",
+  "review_dir": "<absolute IDEAS_DIR/reviews>",
+  "proposal_dir": "<absolute IDEAS_DIR/proposals>",
   "candidate_sha256": "<SHA-256 of candidate file UTF-8 bytes>",
   "candidate_ids": ["C1", "C2", "C3", "C4", "C5"],
   "ranking": [{"rank": 1, "candidate_id": "<actual top-ranked ID>"}],
@@ -339,7 +345,7 @@ Copy the approved anchor verbatim into every initial/revised/final proposal and 
 
 ## Phase 2 — Author an implementation-ready initial proposal
 
-Write the full next unused `proposal-N.md`, not an outline or list of modules. Treat it as immutable after saving; every full revision uses a new unused numbered proposal file. It and every revised/final proposal must contain:
+Write the full next unused `PROPOSAL_DIR/proposal-N.md`, not an outline or list of modules. Treat it as immutable after saving; every full revision uses a new unused numbered proposal file. It and every revised/final proposal must contain:
 
 1. **Title, provenance and status**: project/source digest and summary binding, selected candidate/intent, mode, proposal-only status, and scope of novelty evidence. Distinguish method-review readiness from empirical success.
 2. **Problem Anchor**: verbatim standalone content.
@@ -377,7 +383,7 @@ The parent authors/revises; it cannot impersonate the independent reviewer. For 
 
 Give the reviewer a self-contained packet containing:
 
-- Assigned current-workflow attempt number and distinct unused review sequence `N`, threshold, exact output file `IDEAS_DIR/round-N-review.md`, and ownership restriction.
+- Assigned current-workflow attempt number and distinct unused review sequence `N`, threshold, exact output file `REVIEW_DIR/round-N-review.md`, and ownership restriction.
 - Standalone anchor verbatim and full current proposal (inline or exact accessible full-file reference), including its fingerprint.
 - Original user intent/constraints when present; explicitly identify literature-driven mode otherwise.
 - Exact bound review JSON/digest, summary manifest/snapshot, context, candidate comparison and confirmed selection when applicable, relevant paper analyses/sidecars and accessible source references. The reviewer must read sufficient evidence to check central novelty/mechanism claims, not simply trust the author's synthesis.
@@ -439,7 +445,7 @@ After the reviewer returns, preserve its raw response and record metadata. Verif
 
 A failed child, missing file, malformed/nonfinite/out-of-range scores, proposal fingerprint mismatch, absent verdict, or incomplete assessment is an **invalid review**, never success. Record failure, null authoritative score/verdict where unavailable, and the exact reason. It consumes an attempt and requires a fresh reviewer within the remaining limit; never fill absent scores with guesses, silently coerce them, or overwrite its raw history.
 
-Append to `score-history.md` the workflow binding, attempt, file sequence, actual agent/model availability, reviewed immutable proposal/hash, seven scores, reviewer-reported overall, parent-computed overall, raw verdict, validity, blockers and effective status. Keep earlier workflows clearly historical. Save `phase=review` with the actual review binding, consumed attempts, sequence, validity, score/verdict and remaining blockers.
+Append to `REVIEW_DIR/score-history.md` the workflow binding, attempt, file sequence, actual agent/model availability, reviewed immutable proposal/hash, seven scores, reviewer-reported overall, parent-computed overall, raw verdict, validity, blockers and effective status. Keep earlier workflows clearly historical. Refresh root `REVIEW_SUMMARY.md` with the overall review history and overview, including links to the immutable raw file. Save `phase=review` with the actual review binding, consumed attempts, sequence, validity, score/verdict and remaining blockers.
 
 ## Phase 4 — Revise and re-review until ready or stopped
 
@@ -450,8 +456,8 @@ If not ready and attempts remain:
 1. Copy the anchor verbatim and write an **Anchor Check**: original bottleneck, why the method still addresses it, and suggestions rejected as drift.
 2. Write a **Simplicity Check**: dominant contribution, pieces to delete/merge/freeze, suggestions rejected as unnecessary complexity, and precise primitive roles.
 3. Resolve every issue by explicit disposition: accepted fix, partial fix with remaining risk, or evidence-backed rejection. Map changes to issue IDs, paper/proposal evidence, and core-method consequences. Improve mechanisms before adding experiments or modules.
-4. If clarification is genuinely necessary, save unused `round-N-discussion-input.md` with the anchor, full immutable proposal reference, critique, explicit rebuttal evidence and focused questions. Launch a **fresh** clarification subagent restricted to unused `round-N-discussion-review.md`; preserve raw answers and actual metadata. Reserve a fresh file sequence if these filenames already exist. Clarification cannot edit proposals or establish readiness; any score is advisory, not a full review attempt. Permit at most one clarification exchange per full-review attempt, not an unbounded loop.
-5. Write the entire revised implementation-ready proposal to the next unused immutable `proposal-M.md` with the verbatim anchor. Save unused `round-N-refinement.md` with anchor/simplicity checks, issue/change log and an exact path/hash reference to that full snapshot, not an incomplete method patch. Save `phase=refine` and its current proposal path/fingerprint.
+4. If clarification is genuinely necessary, save unused `REVIEW_DIR/round-N-discussion-input.md` with the anchor, full immutable proposal reference, critique, explicit rebuttal evidence and focused questions. Launch a **fresh** clarification subagent restricted to unused `REVIEW_DIR/round-N-discussion-review.md`; preserve raw answers and actual metadata. Reserve a fresh file sequence if these filenames already exist. Clarification cannot edit proposals or establish readiness; any score is advisory, not a full review attempt. Permit at most one clarification exchange per full-review attempt, not an unbounded loop.
+5. Write the entire revised implementation-ready proposal to the next unused immutable `PROPOSAL_DIR/proposal-M.md` with the verbatim anchor. Save unused `REVIEW_DIR/round-N-refinement.md` with anchor/simplicity checks, issue/change log and an exact path/hash reference to that full snapshot, not an incomplete method patch. Save `phase=refine` and its current proposal path/fingerprint.
 6. Launch a fresh reviewer on the full revision with a newly reserved unused review sequence and incremented current-workflow attempt count. Re-evaluate all seven dimensions independently; never tell a new reviewer that it authored prior critique.
 
 Invalid reviews trigger a fresh attempt on the unchanged full proposal instead of pretending to revise missing critique. `max-rounds` caps current-workflow full-review attempts, including failed/invalid ones, not clarification or historical file numbers. Never quietly reset/raise it, lower the threshold, average past rounds to pass, or claim improvement without observed reviews.
@@ -462,7 +468,7 @@ At the limit, prepare the best fully specified current proposal as a final **can
 
 Prepare the candidate final document and report drafts even when the attempt limit is reached without readiness, provided proposal work exists. Never describe a blocked or incomplete method as implementation-ready. Preserve old current exports while approval is pending. Technical verdict and human approval are separate fields and must stay consistent across state, reports and chat.
 
-### `FINAL_PROPOSAL.md`
+### `PROPOSAL_DIR/FINAL_PROPOSAL.md`
 
 The clean, full final method document, using all Phase 2 sections and the verbatim anchor. No raw critique or round chatter. Include provenance, exact upstream paths, mode, readiness/evidence status and honest assumptions. Its core mechanism, diagram, training/inference recipe, novelty delta and minimal validation must agree. If not READY, retain the usable best current method and clearly mark unresolved implementation/evidence prerequisites. `FINAL` names the delivered snapshot, not proven success.
 
@@ -476,24 +482,24 @@ bound to the exact source snapshot reviewed by the last valid reviewer; do not r
 finalization makes only this clean export. Any substantive method change needs another
 fresh review within the remaining attempt limit, or an explicit unreviewed status; it
 cannot inherit the previous score.
-Prepare the exact clean export as `FINAL_PROPOSAL_DRAFT.md`, with reports in `REVIEW_SUMMARY_DRAFT.md` and `REFINEMENT_REPORT_DRAFT.md`. Persist `phase=proposal_draft`, `status=awaiting_proposal_approval`, `proposal_candidate_path`, actual `proposal_sha256`, and `proposal_approval={approved:false,proposal_sha256:<candidate export byte hash>,anchor_sha256:<approved anchor byte hash>,confirmation_reference:null}`. Reports retain the independent review's exact source/hash and honest verdict; do not imply the user has accepted them.
+Prepare the exact clean export as `PROPOSAL_DIR/FINAL_PROPOSAL_DRAFT.md`, with reports in `REVIEW_DIR/REVIEW_SUMMARY_DRAFT.md` and `REVIEW_DIR/REFINEMENT_REPORT_DRAFT.md`. Persist `phase=proposal_draft`, `status=awaiting_proposal_approval`, `proposal_candidate_path`, actual `proposal_sha256`, and `proposal_approval={approved:false,proposal_sha256:<candidate export byte hash>,anchor_sha256:<approved anchor byte hash>,confirmation_reference:null}`. Reports retain the independent review's exact source/hash and honest verdict; do not imply the user has accepted them.
 
 After technical independent review/parent validation, display the actual final candidate (full mechanism or a complete readable presentation plus exact accessible full document), approved problem/non-goals, changed mechanisms, minimal claims/tests, evidence limits, unresolved blockers, resource assumptions, actual affected paths and export/anchor digests. Ask whether the user approves this exact proposal as the current method anchor; acceptance permits canonical export/report replacement, not experiment planning or launch. `READY`, the earlier anchor approval and candidate choice cannot approve it. Without a valid independent review, retain an unreviewed draft and the precise blocker rather than passing this reviewed-final gate.
 
-On an actual unambiguous approval, re-read export/anchor/source/summary/review bindings and record true with the real `confirmation_reference`. Preserve prior approved immutable exports/reports and their approval evidence, then copy the approved clean export bytes unchanged to `FINAL_PROPOSAL.md` and commit the matching reports. `proposal_approval.proposal_sha256` must equal the delivered export's actual `final_proposal_sha256`; it is not `last_reviewed_proposal_sha256`. Any content change stales this proposal approval (and substantive method changes require fresh independent review); re-present the changed candidate. Rejection pauses as `declined`; no canonical replacement, completed status or downstream offer while pending/stale/declined.
+On an actual unambiguous approval, re-read export/anchor/source/summary/review bindings and record true with the real `confirmation_reference`. Preserve prior approved immutable exports/reports and their approval evidence, then copy the approved clean export bytes unchanged to `PROPOSAL_DIR/FINAL_PROPOSAL.md` and commit the matching reports. `proposal_approval.proposal_sha256` must equal the delivered export's actual `final_proposal_sha256`; it is not `last_reviewed_proposal_sha256`. Any content change stales this proposal approval (and substantive method changes require fresh independent review); re-present the changed candidate. Rejection pauses as `declined`; no canonical replacement, completed status or downstream offer while pending/stale/declined.
 
 
 ### `REVIEW_SUMMARY.md`
 
 Include project, review digest, complete summary snapshot and workflow binding; mode and original intent or exact confirmed candidate/rationale; upstream paths, anchor, current-workflow attempts/valid reviews, threshold, final computed score or unavailability, verdict and exact reviewed-snapshot binding. Provide a table with distinct attempt/file sequence, reviewer identity/model availability, concerns, fixes/pushback, simplification, resolution evidence and remaining risks. State anchor preservation, contribution focus, appropriate modern leverage, novelty coverage and final blockers; prior workflows' scores are historical only.
 
-### `REFINEMENT_REPORT.md`
+### `REVIEW_DIR/REFINEMENT_REPORT.md`
 
 Include the same binding/status facts, actual output paths, full score evolution, method evolution and candidate rejection rationale, anchor/simplicity checks, issue dispositions, drift/pushback log, confirmed resources versus assumptions, remaining weaknesses, and downstream implementation/validation inputs. Preserve all raw reviewer responses verbatim under separate `<details>` sections with their round metadata, or link their unchanged complete files and explicitly explain that raw records live there. Do not summarize away failed or dissenting reviews.
 
-### `score-history.md` and state
+### `REVIEW_SUMMARY.md`, `reviews/score-history.md` and state
 
-Complete the score table with every attempt, including invalid/failed reviews and null scores where applicable. Only after matching actual anchor/proposal approvals and required canonical artifacts are committed save `phase=done`, `status=completed` in `REVIEW_STATE.json` with actual final binding/verdict. A technically non-ready but independently reviewed proposal may be user-approved and completed as `REVISE`/`RETHINK`, never mislabeled READY. Pending final approval stays `phase=proposal_draft`, `status=awaiting_proposal_approval`; recovery re-presents that exact candidate without repeating reviews or replenishing attempts. On a real failure retain the checkpoint and record the reason, not a nonexistent completed bundle.
+Complete the score table in `REVIEW_DIR/score-history.md` with every attempt, including invalid/failed reviews and null scores where applicable. Keep `REVIEW_SUMMARY.md` at the root as the single human-facing overall history and overview, linking each immutable raw review and preserving the score evolution. Only after matching actual anchor/proposal approvals and required canonical artifacts are committed save `phase=done`, `status=completed` in `REVIEW_STATE.json` with actual final binding/verdict. A technically non-ready but independently reviewed proposal may be user-approved and completed as `REVISE`/`RETHINK`, never mislabeled READY. Pending final approval stays `phase=proposal_draft`, `status=awaiting_proposal_approval`; recovery re-presents that exact candidate without repeating reviews or replenishing attempts. On a real failure retain the checkpoint and record the reason, not a nonexistent completed bundle.
 
 ### User-facing report
 
@@ -504,7 +510,7 @@ Respond concisely in Chinese with:
 - For every candidate: core argument chain, one-sentence core contribution, resource fit, estimated core-test time, estimated complete-validation time, estimate basis/confidence, and the main uncertainty.
 - Attempts/valid reviews, computed score and verdict, explicitly subjective method-review assessment.
 - Anchor status, strongest concrete method improvements, and unresolved novelty/implementation/resource risks.
-- Actual links/paths to `FINAL_PROPOSAL.md`, `REVIEW_SUMMARY.md`, `REFINEMENT_REPORT.md`, and score history.
+- Actual links/paths to `PROPOSAL_DIR/FINAL_PROPOSAL.md`, root `REVIEW_SUMMARY.md`, `REVIEW_DIR/REFINEMENT_REPORT.md`, and `REVIEW_DIR/score-history.md`.
 - A separately confirmed next-step offer only when appropriate. No invented experiments, observed gains, or automatic downstream launch.
 
 ## Confirmed downstream handoff
@@ -519,20 +525,20 @@ Keep the following specific optional offer in the conversation as `NEXT_SKILL_HA
   "to_skill": "research-experiment-plannning",
   "project_root": "<actual absolute project root>",
   "docs_root": "<actual absolute project/docs>",
-  "invocation": "/research-experiment-plannning \"<actual absolute FINAL_PROPOSAL.md>\" project: \"<actual absolute project root>\"",
+  "invocation": "/research-experiment-plannning \"<actual absolute PROPOSAL_DIR/FINAL_PROPOSAL.md>\" project: \"<actual absolute project root>\"",
   "artifacts": [
-    {"role": "proposal", "path": "<actual absolute FINAL_PROPOSAL.md>", "sha256": "<exact file byte SHA256>"},
+    {"role": "proposal", "path": "<actual absolute PROPOSAL_DIR/FINAL_PROPOSAL.md>", "sha256": "<exact file byte SHA256>"},
     {"role": "review-summary", "path": "<actual absolute REVIEW_SUMMARY.md>", "sha256": "<exact file byte SHA256>"},
-    {"role": "refinement-report", "path": "<actual absolute REFINEMENT_REPORT.md>", "sha256": "<exact file byte SHA256>"},
+    {"role": "refinement-report", "path": "<actual absolute REVIEW_DIR/REFINEMENT_REPORT.md>", "sha256": "<exact file byte SHA256>"},
     {"role": "upstream-artifact", "path": "<actual absolute consumed source or state file>", "sha256": "<exact file byte SHA256>"}
   ],
-  "proposal_path": "<actual IDEAS_DIR/FINAL_PROPOSAL.md>",
+  "proposal_path": "<actual PROPOSAL_DIR/FINAL_PROPOSAL.md>",
   "anchor_path": "<actual approved PROBLEM_ANCHOR.md>",
   "anchor_sha256": "<actual approved anchor byte SHA256>",
   "method_state_path": "<actual IDEAS_DIR/REVIEW_STATE.json>",
   "method_state_sha256": "<actual committed owner state byte SHA256>",
   "review_summary_path": "<actual IDEAS_DIR/REVIEW_SUMMARY.md>",
-  "refinement_report_path": "<actual IDEAS_DIR/REFINEMENT_REPORT.md>",
+  "refinement_report_path": "<actual REVIEW_DIR/REFINEMENT_REPORT.md>",
   "input_json": "<actual paired review JSON>",
   "summary_dir": "<actual paired completed summary directory>",
   "input_sha256": "<actual canonical review digest>",
@@ -552,7 +558,7 @@ set `stale`, invalidate this offer, and need a refreshed specific confirmation. 
 one unresolved next-skill offer may exist; replace obsolete offers instead of silently
 retaining them. Silence, timeout or autonomous mode does not authorize the next skill.
 
-Show `/research-experiment-plannning "<actual absolute FINAL_PROPOSAL.md>" project: "<actual absolute project root>"` with actual resolved paths and explain that companions are fixed files in the same `IDEAS_DIR`; outputs belong in `DOCS_ROOT/research-experiment-plannning`. A direct affirmative to this specific unresolved offer accepts once; refusal stops. Revalidate all exact bound source/summary/proposal/report fingerprints on acceptance and pass their actual paths/project/digests through the normal loader. Updated current files invalidate the offer, never substitute another proposal or retain an old score. Consent authorizes planning only, not bridge/training, paper writing, PKBase filing or repetition. An explicit invocation replaces an obsolete offer.
+Show `/research-experiment-plannning "<actual absolute PROPOSAL_DIR/FINAL_PROPOSAL.md>" project: "<actual absolute project root>"` with actual resolved paths and explain that companions are fixed files in `IDEAS_DIR`, with proposal files under `PROPOSAL_DIR`; outputs belong in `DOCS_ROOT/research-experiment-plannning`. A direct affirmative to this specific unresolved offer accepts once; refusal stops. Revalidate all exact bound source/summary/proposal/report fingerprints on acceptance and pass their actual paths/project/digests through the normal loader. Updated current files invalidate the offer, never substitute another proposal or retain an old score. Consent authorizes planning only, not bridge/training, paper writing, PKBase filing or repetition. An explicit invocation replaces an obsolete offer.
 
 ## Invocation examples
 
@@ -593,7 +599,7 @@ This resumes only an existing matching pending C3 selection with unchanged input
 **Optional next stage:**
 
 ```text
-/research-experiment-plannning "F:/projects/adaptation-study/docs/research-ideas/FINAL_PROPOSAL.md" project: "F:/projects/adaptation-study"
+/research-experiment-plannning "F:/projects/adaptation-study/docs/research-ideas/proposals/FINAL_PROPOSAL.md" project: "F:/projects/adaptation-study"
 ```
 
 This is a separate explicit request. Method companions stay in `docs/research-ideas`; plan/tracker outputs update `docs/research-experiment-plannning`, not the proposal directory. Experimental IDs such as R001 remain experiment identifiers, not output-folder names.
