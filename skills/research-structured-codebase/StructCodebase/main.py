@@ -5,11 +5,25 @@ import importlib
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 # Inspection commands must not leave import caches in a copied project.
 sys.dont_write_bytecode = True
 PROJECT_ROOT = Path(__file__).resolve().parent
+OUTPUT_DIR_PATTERN = re.compile(r"^output[\\/][^\\/]+[\\/][^\\/]+[\\/](R[0-9]+)_[^\\/]+$")
+
+
+def validate_output_dir(value):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            "ENV.OUTPUT_DIR must match output/{dataset}/{trainer}/{Rnum}_{config}"
+        )
+    if not OUTPUT_DIR_PATTERN.fullmatch(value):
+        raise ValueError(
+            "ENV.OUTPUT_DIR must match output/{dataset}/{trainer}/{Rnum}_{config}; "
+            "for example output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42"
+        )
 
 
 def parser():
@@ -63,8 +77,7 @@ def resolve_config(args):
 
     if not cfg.TRAINER.NAME:
         raise ValueError("Set TRAINER.NAME in YAML, --trainer, or trailing overrides")
-    if not isinstance(cfg.ENV.OUTPUT_DIR, str) or not cfg.ENV.OUTPUT_DIR.strip():
-        raise ValueError("ENV.OUTPUT_DIR must be a non-empty path")
+    validate_output_dir(cfg.ENV.OUTPUT_DIR)
     if args.mode == "test":
         if args.resume:
             raise ValueError("--resume applies only to training/debug")

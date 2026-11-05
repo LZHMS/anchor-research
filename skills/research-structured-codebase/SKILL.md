@@ -65,7 +65,7 @@ prerequisites, not scientific results or permission to weaken execution checks.
 | `scripts/setup.sh` | Safe environment/usage guidance; no implicit experiment |
 | `dataset/`, `models/`, `trainers/`, `losses/`, `evaluator/` | Actual application components created as needed |
 | `config/` | Actual project YAML files; no fictional trainer/data identifiers |
-| `output/` or configured path | Runtime artifacts, distinct per attempt and never silently deleted |
+| `output/{dataset}/{trainer}/{Rnum}_{config}` | Runtime artifacts, distinct per attempt and never silently deleted |
 
 ## Extension rules
 
@@ -118,7 +118,7 @@ Use the actual `BaseConfig().cfg` schema. Precedence is:
 
 Declare genuinely new application settings in the supported schema or `ENV.EXTRA`; do not assume every arbitrary new nested CLI key exists. Read the actual model's pretrained configuration fields instead of copying a fictional `STAGE1_PATH` into another project.
 
-Config paths, working directories and relative runtime paths belong to `CODE_ROOT`; use absolute paths when binding external data/artifacts. Keep command/config/source hashes with the caller's attempt. Configuration checking must not create output directories or start a trainer.
+Config paths, working directories and relative runtime paths belong to `CODE_ROOT`; use absolute paths when binding external data/artifacts. `ENV.OUTPUT_DIR` is mandatory and must match `output/{dataset}/{trainer}/{Rnum}_{config}`, for example `output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42`. The `Rnum` segment must be `R` followed by digits. Keep command/config/source hashes with the caller's attempt. Configuration checking must not create output directories or start a trainer.
 
 ## Native entry point
 

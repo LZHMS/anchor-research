@@ -20,7 +20,11 @@ class EntrypointTests(unittest.TestCase):
         self.project = self.root / "project with spaces"
         shutil.copytree(ASSETS, self.project, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".git"))
         self.config = self.project / "config.yaml"
-        self.config.write_text("TRAINER:\n  NAME: YamlTrainer\nENV:\n  OUTPUT_DIR: runtime-output\n", encoding="utf-8")
+        self.config.write_text("TRAINER:\n  NAME: YamlTrainer\nENV:\n  OUTPUT_DIR: output/MEAD3D/UniStyleTalk/R015_test\n", encoding="utf-8")
+
+    @property
+    def output(self):
+        return self.project / "output" / "MEAD3D" / "UniStyleTalk" / "R015_test"
 
     def run_cli(self, *arguments, isolated=False):
         environment = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
@@ -36,7 +40,7 @@ class EntrypointTests(unittest.TestCase):
         result = self.run_cli("--help", isolated=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--config-file", result.stdout)
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
 
     def test_config_precedence_and_safe_defaults_without_training_imports(self):
         result = self.run_cli("--config-file", "config.yaml", "--trainer", "NamedTrainer", "--check-config",
@@ -49,12 +53,12 @@ class EntrypointTests(unittest.TestCase):
         self.assertEqual(cfg["TRAIN"]["SAVE_FREQ"], 1)
         self.assertFalse(cfg["ENV"]["USE_WANDB"])
         self.assertEqual(cfg["ENV"]["WANDB"]["ENTITY"], "")
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
         self.assertFalse(list(self.project.rglob("__pycache__")))
 
     def test_nonempty_output_is_refused_before_trainer_construction(self):
-        output = self.project / "runtime-output"
-        output.mkdir()
+        output = self.output
+        output.mkdir(parents=True)
         keep = output / "keep.txt"
         keep.write_bytes(b"irreplaceable output")
         result = self.run_cli("--config-file", "config.yaml")
@@ -67,19 +71,19 @@ class EntrypointTests(unittest.TestCase):
         result = self.run_cli("--config-file", "config.yaml", "--check-config", "TRAIN.SAVE_FREQ", "0")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("TRAIN.SAVE_FREQ", result.stderr)
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
 
     def test_resume_requires_real_checkpoint_artifacts(self):
         result = self.run_cli("--config-file", "config.yaml", "--resume")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("checkpoint pointers", result.stderr)
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
 
     def test_test_checkpoint_selection_must_match_config_mode(self):
         result = self.run_cli("--config-file", "config.yaml", "--mode", "test", "--model-dir", "saved", "--load-iter", "1", "--check-config")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("--load-iter requires", result.stderr)
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
 
     def test_debug_requires_explicit_bound(self):
         result = self.run_cli("--config-file", "config.yaml", "--mode", "debug", "--check-config")
@@ -90,7 +94,17 @@ class EntrypointTests(unittest.TestCase):
         result = self.run_cli("--config-file", "config.yaml", "--module", "no_such_consumer_module", "--check-config")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no_such_consumer_module", result.stderr)
-        self.assertFalse((self.project / "runtime-output").exists())
+        self.assertFalse(self.output.exists())
+
+    def test_output_directory_must_match_run_layout(self):
+        self.config.write_text("TRAINER:\n  NAME: YamlTrainer\nENV:\n  OUTPUT_DIR: output/MEAD3D/UniStyleTalk/experiment\n", encoding="utf-8")
+        result = self.run_cli("--config-file", "config.yaml", "--check-config")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("output/{dataset}/{trainer}/{Rnum}_{config}", result.stderr)
+
+        self.config.write_text("TRAINER:\n  NAME: YamlTrainer\nENV:\n  OUTPUT_DIR: output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42\n", encoding="utf-8")
+        result = self.run_cli("--config-file", "config.yaml", "--check-config")
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

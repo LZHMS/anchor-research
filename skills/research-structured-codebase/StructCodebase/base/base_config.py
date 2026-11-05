@@ -13,8 +13,9 @@ class BaseConfig:
     cfg.ENV = CN(new_allowed=True)
     cfg.ENV.VERSION = 1
     cfg.ENV.SEED = -1
-    # Directory to save the output files (like log.txt and model weights)
-    cfg.ENV.OUTPUT_DIR = "./output"
+    # Directory to save the output files (like output.log and model weights).
+    # The entrypoint requires output/{dataset}/{trainer}/{Rnum}_{config}.
+    cfg.ENV.OUTPUT_DIR = ""
     # Path to a directory where the files were saved previously
     cfg.ENV.RESUME = ""
     cfg.ENV.GPU = [0]

@@ -185,6 +185,13 @@ backend and actual log/result locations. Record available commit identity and re
 file-byte hashes; a commit alone does not describe uncommitted code. Preserve the same
 facts with each attempt so historical runs retain their original codebase.
 
+When `codebase_kind` is `research-structured-codebase`, require
+`ENV.OUTPUT_DIR=output/{dataset}/{trainer}/{Rnum}_{config}`. `Rnum` must be `R`
+followed by digits, and the relative path is resolved from the selected `REPO_PATH`.
+Reject bare `output`, arbitrary experiment folders and `Rnum` directories outside this
+layout before implementation or launch. Record the resolved output path with the
+attempt's command, configuration and result/evidence paths.
+
 The packet's null codebase fields mean unresolved selection, not a missing scientific
 input or bootstrap permission. An initially unbound selection may resolve under this
 policy; echo and bind it before actions, recheck plan compatibility and record approval
@@ -513,7 +520,7 @@ Canonical alignment-needed offer (illustrative placeholders; runtime uses actual
     "to_skill": "research-retrofit",
     "project_root": "/absolute/project",
     "docs_root": "/absolute/project/docs",
-    "invocation": "/research-retrofit report: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — code: \"/absolute/project/models/method.py\" — repo_path: \"/absolute/project\" — result_paths: [\"/absolute/project/output/dataset/config/metrics.jsonl\"] — proposal: \"/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md\" — anchor: \"/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
+   "invocation": "/research-retrofit report: \"/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md\" — code: \"/absolute/project/models/method.py\" — repo_path: \"/absolute/project\" — result_paths: [\"/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/metrics.jsonl\"] — proposal: \"/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md\" — anchor: \"/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md\" — project: \"/absolute/project\" — docs root: \"/absolute/project/docs\"",
     "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md",
     "anchor_path": "/absolute/project/docs/research-ideas/PROBLEM_ANCHOR.md",
     "anchor_sha256": "<actual current anchor byte SHA-256>",
@@ -523,14 +530,14 @@ Canonical alignment-needed offer (illustrative placeholders; runtime uses actual
     "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md",
     "code_paths": ["/absolute/project/models/method.py"],
     "repo_path": "/absolute/project",
-    "result_paths": ["/absolute/project/output/dataset/config/metrics.jsonl"],
+   "result_paths": ["/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/metrics.jsonl"],
     "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md",
     "tracker_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md",
     "plan_sha256": "<actual current plan byte SHA-256>",
     "plan_state_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN_STATE.json",
     "plan_state_sha256": "<actual plan approval state byte SHA-256>",
     "task_inventory_sha256": "<actual approved planning inventory SHA-256>",
-    "evidence_paths": ["/absolute/project/output/dataset/config/output.log"],
+   "evidence_paths": ["/absolute/project/output/MEAD3D/UniStyleTalk/R015_M2_big512_r013b_s42/output.log"],
     "completed_run_ids": ["R001"],
     "original_run_bindings": [
       {"run_id": "R001", "plan_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_PLAN.md", "plan_sha256": "<original executed plan byte SHA-256>", "proposal_path": "/absolute/project/docs/research-ideas/FINAL_PROPOSAL.md", "proposal_sha256": "<original executed proposal byte SHA-256>", "report_path": "/absolute/project/docs/research-experiment-plannning/EXPERIMENT_TRACKER.md", "applicability": "Implementation differs from the current proposal; alignment required before publication claims"}
