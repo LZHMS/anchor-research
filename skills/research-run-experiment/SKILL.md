@@ -1,9 +1,9 @@
 ---
 name: research-run-experiment
 description: |
-   Execute planned ML experiments and manage their shared task/progress/results tracker: reconcile dependencies, implement code, deploy authorized runs, monitor training, record evidence and recommend the next bounded action.
+   Execute planned ML experiments and manage their shared task/progress/results tracker: reconcile dependencies, implement code, deploy authorized runs, monitor training (optionally through user-authorized host scheduled checks), record evidence and recommend the next bounded action.
    Trigger: "run experiment", "跑实验", "launch training", "implement and run", "review log", "复查日志", "监控训练", "check training", "实验进度", "查看实验进度", "实验结果汇总"
-version: 4.4.0
+version: 4.5.0
 author: Zhihao Li
 license: MIT
 user-invocable: true
@@ -39,9 +39,16 @@ approval or action permission.
 - **Monitor Mode**: Checks already-launched runs through their recorded process identity and WandB/local logs, updates observations, and handles authorized health/recovery actions. Never launches or redeploys a run merely because monitoring was requested.
 - **Review Mode**: Reports project/task progress or evaluates existing finished evidence and updates the tracker. Does not implement code, deploy, kill processes or retry. Without requested IDs, summarize the current applicable task inventory; unstarted tasks remain unstarted.
 
-Monitoring exists only during an active invocation or a separately configured external
-service. A skill is not a persistent scheduler: report observation time, stale/unknown
-state and when monitoring stopped; never promise unattended continuous supervision.
+Monitoring exists during an active invocation or through a separately configured
+host-level scheduled task. The skill itself is not a persistent scheduler: never
+promise unattended continuous supervision from an invocation alone, and report
+observation time, stale/unknown state and when monitoring stopped. When the host
+offers scheduling (e.g., DSH scheduled tasks), a periodic monitor/review status
+check is allowed and should be offered after an observed launch under Phase 4:
+creation requires direct explicit user authorization, every firing is an
+independent monitor/review-scoped visit granting no launch/retry/stop/budget
+authority, and its identity, cadence, next occurrence and prompt are recorded in
+the tracker and re-verified each visit.
 
 Five principles dominate this skill:
 1. **Traceable Code Implementation.** Every new model, trainer, or config file must be logged in `EXPERIMENT_TRACKER.md` before execution.
@@ -58,6 +65,7 @@ Five principles dominate this skill:
 - **REPO_REVISION = null** — Optional user/plan-pinned revision. Do not silently switch an existing checkout.
 - **LAUNCH_AUTHORIZATION = explicit bounded scope** — Implementation never triggers deployment by default; verify approved planning content and the actual run/action/budget authorization immediately before every launch.
 - **SANITY_FIRST = true** — Always run a small sanity-check script first to catch pipeline bugs early.
+- **MONITOR_SCHEDULE = none until explicitly authorized** — No scheduled status check exists until the user directly authorizes that exact schedule. After an observed launch the runner may offer one through the host's scheduling mechanism (e.g., DSH scheduled tasks). The host scheduler owns persistence; each firing re-enters this skill for monitor/review scope only. A missing schedule never blocks manual checks; an existing schedule never authorizes launches, retries, stops, replanning or budget changes.
 - **PROJECT_ROOT** — Explicit project argument, otherwise the bound handoff's accepted project root, otherwise the current working project directory; never the installed skill directory. Resolve relative arguments against this root.
 - **DOCS_ROOT = `<PROJECT_ROOT>/docs`** — Existing explicit docs-root overrides remain supported and are resolved against `PROJECT_ROOT`.
 - **PLAN_DIR = `<DOCS_ROOT>/research-experiment-plannning`**
@@ -336,7 +344,8 @@ completion from an old optimistic label. Unresolved evidence is a recorded block
 Re-read the tracker before every update. Unexpected external changes require
 reconciliation rather than overwriting. Preserve authorized self-produced changes in
 the invocation's history/checkpoint so interruption can resume that same scope without
-duplicating a live process. No background polling/automatic resumption is promised.
+duplicating a live process. Apart from a user-authorized host scheduled task recorded
+in the tracker, no background polling or automatic resumption is promised.
 
 ### Milestone, budget and drift decisions
 
@@ -409,6 +418,19 @@ different experiment run. Monitor/review skip this deployment preflight.
    Capture actual stdout/stderr, log/result paths and process/job identity. Record an
    actual launch before `RUNNING`; failure is a real `BLOCKED` error, not fake training.
    Preserve distinct previous attempt artifacts rather than overwriting them.
+4. **Offer an optional scheduled status check.** When the host provides a scheduling
+   mechanism (e.g., DSH scheduled tasks), after an observed launch propose a periodic
+   monitor/review visit with an explicit cadence and an exact scoped invocation such as
+   `/research-run-experiment mode: monitor run ids: R001 project: "<root>"` bound to the
+   tracker/plan paths. Create it only on direct explicit authorization for that exact
+   schedule; the offer itself grants nothing. Record the scheduled task's identity,
+   cadence, next occurrence, prompt text and monitor/review-only scope in the tracker,
+   and tell the user how to change or cancel it. Each firing arrives as its own
+   user-message invocation and re-enters under the normal monitor/review rules; a fired
+   timer is a monitoring request, never deployment, retry, stop or budget permission.
+   Creation, cadence changes and cancellation each require explicit user authorization;
+   a missed or failing occurrence is reported as stale/unknown, never compensated by
+   invented continuity.
 
 If `SANITY_FIRST=true`, any prerequisite sanity execution must already be a planned
 authorized task or an explicitly included substep within the accepted task/budget.
@@ -431,7 +453,7 @@ During an ongoing run or a review of existing evidence, separate diagnosis from 
 3. **The main execution agent makes the decision.**
    - Consider the report's evidence, uncertainty and advisory `continue`/`wait`/`inspect`/`request_stop` recommendation alongside current process/job identity/state, metric stage/direction, comparable baseline, actual plan criteria, remaining budget and permissions. Do not recreate a second universal threshold table here.
    - Review mode records observations and recommendations only: no stop, retry, deployment or configuration changes. A monitoring/deployment request is not blanket stop permission, and a `critical` diagnosis is not authorization.
-   - Continue or wait only within the already-authorized run/budget. No automatic extension, follow-up scheduler or replacement launch. Unavailable/stale telemetry means unknown quality, not proof of success or a reason to kill.
+   - Continue or wait only within the already-authorized run/budget. No automatic extension, an unauthorized follow-up scheduler or a replacement launch. Scheduled occurrences update observations only. Unavailable/stale telemetry means unknown quality, not proof of success or a reason to kill.
    - Stop only when the exact live target, actual stop criterion and explicit in-scope stop permission are verified. Without that permission, report the concern and request a decision; do not terminate. Use the project's actual process-group/scheduler mechanism and only the authorized target, not a broad name-based kill. Record a stop request separately until termination is observed.
    - A low metric relative to a baseline alone is not technical failure. Apply scientific early stopping only under a defined approved criterion; new parameters/strategies/retries remain subject to Phase 6.
 4. **Update the single shared tracker from actual observations.**
@@ -473,8 +495,11 @@ If evidence indicates underperformance, failure or drift:
 Report completion, blockers or authorized strategy changes through the current host's normal user-facing response. Use an external notification channel only when explicitly configured and authorized; no particular CLI, messaging provider or agent framework is required.
 
 Report the actual observation time and whether monitoring continues in this invocation
-or has stopped. Do not describe notification or a completed review visit as persistent
-supervision or completion of still-running training.
+or has stopped. When a user-authorized scheduled check exists, report its identity,
+cadence and next occurrence; when none exists, state that monitoring has stopped and
+further status requires a new monitor/review visit. Do not describe notification or a
+completed review visit as persistent supervision or completion of still-running
+training.
 
 ### Phase 8: Conditional Next-Stage Offer
 
@@ -482,7 +507,10 @@ First report the actual outcome, remaining runs/required evidence, and exact tra
 
 First refresh `## Progress Summary` and `## Next Action`. If a completed invocation
 leaves required work outstanding, recommend a specific dependency-ready next task or
-an explicit monitor/review visit, not publication. For another invocation use the same
+an explicit monitor/review visit, not publication. While authorized runs remain
+`RUNNING` and the host supports scheduling, also offer a periodic scheduled status
+check under the Phase 4 rule or confirm keeping an existing one. For another
+invocation use the same
 incoming packet schema with `from_skill: research-run-experiment`, `to_skill: research-run-experiment`,
 fresh exact tracker/artifact hashes, IDs and mode; show its full actual command and wait
 for new specific assent. Never reuse the consumed packet or choose another task after
@@ -611,8 +639,18 @@ At runtime print the recommended next action/route and reason, then `推荐命�
 - **NEVER OVERWRITE FILE HISTORY.** When updating `## Files Created/Updated`, specifically append new items underneath the existing ones.
 - **GROUND TRUTH ONLY.** Evaluation must compare predictions directly against the dataset's actual labels/targets.
 - **NO AUTONOMOUS DEFAULT.** Implementation, diagnosis and numeric milestone success do not launch, stop, retry, extend budget, change the approved plan or cross a stage gate. Record exact permissions and pause new dependent actions when decisions or content-bound approvals are missing.
+- **SCHEDULING IS AN EXPLICIT HOST SERVICE.** A post-launch periodic status check (e.g., a DSH scheduled task) is permitted only after direct explicit authorization for that exact schedule, stays monitor/review-scoped per firing, is recorded in the tracker, and needs fresh explicit authorization to change or cancel.
 
 
+## Changes in 4.5.0
+
+After an observed launch the runner may offer a user-authorized host-level scheduled
+status check (e.g., a DSH scheduled task) whose firings are independent, bounded
+monitor/review visits; the skill itself remains non-resident. Schedule creation,
+cadence changes and cancellation require explicit authorization, each firing grants
+no launch/retry/stop/budget scope, and schedule identity, cadence, next occurrence
+and scoped prompt are recorded and re-verified in the tracker. Missed occurrences are
+reported as stale/unknown rather than covered by invented continuity.
 ## Changes in 4.4.0
 
 Deployment now requires the actual planner/method approval states and unchanged
